@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SprintMatch AI — Scrum Workforce Recommender Test UI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            slate: {
+              850: '#151f32',
+              900: '#0f172a',
+              950: '#080d1a',
+            },
+            brand: {
+              50: '#f0fdf4',
+              500: '#10b981',
+              600: '#059669',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    code, pre, .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .pulse-glow { box-shadow: 0 0 15px rgba(16, 185, 129, 0.35); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased">
+
+  <!-- Top Navigation Bar -->
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-40 px-6 py-3.5 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-bold text-lg">
+        ⚡
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-base font-bold tracking-tight text-white">SprintMatch AI</h1>
+          <span class="text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full">v1.1 Agent</span>
+        </div>
+        <p class="text-xs text-slate-400">Explainable Scrum Workforce Recommender · Pure Deterministic Engine + LangGraph</p>
+      </div>
+    </div>
+
+    <!-- System Status & Controls -->
+    <div class="flex items-center gap-3">
+      <!-- Health Badge -->
+      <div id="healthBadge" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700 text-xs">
+        <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse" id="healthDot"></span>
+        <span id="healthText" class="text-slate-300 font-medium">Checking API...</span>
+      </div>
+
+      <!-- Agent Mode Badge -->
+      <div id="modeBadge" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-mono">
+        <span>🤖 Mode:</span>
+        <span id="modeText" class="font-semibold text-white">native</span>
+      </div>
+
+      <!-- Settings Button -->
+      <button onclick="toggleModal('settingsModal')" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition" title="Connection Settings">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+      </button>
+
+      <a href="/docs" target="_blank" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 px-3 py-1.5 rounded-lg transition inline-flex items-center gap-1.5">
+        <span>Swagger API</span>
+        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+      </a>
+    </div>
+  </header>
+
+  <!-- Quick Scenarios Banner -->
+  <div class="bg-slate-900 border-b border-slate-800/80 px-6 py-2.5 flex items-center gap-2 overflow-x-auto text-xs">
+    <span class="text-slate-400 font-medium whitespace-nowrap flex items-center gap-1.5">
+      <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+      Quick Demo Scenarios:
+    </span>
+    <div class="flex items-center gap-2">
+      <button onclick="loadScenario('TASK-SCN-01')" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-emerald-500/50 text-slate-200 transition font-mono whitespace-nowrap">
+        TASK-SCN-01 <span class="text-slate-400 font-sans">Payment Refund (FastAPI)</span>
+      </button>
+      <button onclick="loadScenario('TASK-SCN-02')" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-emerald-500/50 text-slate-200 transition font-mono whitespace-nowrap">
+        TASK-SCN-02 <span class="text-slate-400 font-sans">SQL Optimization</span>
+      </button>
+      <button onclick="loadScenario('TASK-SCN-03')" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-emerald-500/50 text-slate-200 transition font-mono whitespace-nowrap">
+        TASK-SCN-03 <span class="text-slate-400 font-sans">Analytics Widgets (React)</span>
+      </button>
+      <button onclick="loadScenario('TASK-SCN-04')" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-emerald-500/50 text-slate-200 transition font-mono whitespace-nowrap">
+        TASK-SCN-04 <span class="text-slate-400 font-sans">K8s Failover (DevOps)</span>
+      </button>
+      <button onclick="loadScenario('TASK-SCN-08')" class="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-emerald-500/50 text-slate-200 transition font-mono whitespace-nowrap">
+        TASK-SCN-08 <span class="text-slate-400 font-sans">SDK Packaging</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Grid Layout -->
+  <main class="flex-1 px-6 py-6 max-w-7xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- Left Column: Task Selection & Execution Parameters (4 cols) -->
+    <div class="lg:col-span-4 flex flex-col gap-5">
+
+      <!-- Task Selector Card -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-sm font-semibold text-white flex items-center gap-2">
+            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+            Task Selection
+          </h2>
+          <button onclick="fetchTasks()" class="text-xs text-slate-400 hover:text-emerald-400 transition" title="Refresh Tasks">
+            ↻ Refresh
+          </button>
+        </div>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Select from Database:</label>
+            <select id="taskSelect" onchange="onTaskSelectChange()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+              <option value="">Loading tasks...</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Or Enter Task Code:</label>
+            <div class="flex gap-2">
+              <input type="text" id="taskCodeInput" value="TASK-SCN-01" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-emerald-300 focus:outline-none focus:border-emerald-500" placeholder="e.g. TASK-SCN-01">
+              <button onclick="inspectTaskByCode()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-medium text-slate-300 rounded-lg transition">
+                Load
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selected Task Details Card -->
+        <div id="taskDetailsBox" class="mt-4 pt-4 border-t border-slate-800 space-y-3">
+          <div class="flex items-start justify-between">
+            <div>
+              <span id="detailProject" class="text-[11px] font-medium text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded">Core Payment Service</span>
+              <h3 id="detailTitle" class="text-sm font-semibold text-white mt-1.5 leading-snug">Build payment refund API endpoint</h3>
+            </div>
+            <span id="detailPriority" class="text-[11px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded uppercase">HIGH</span>
+          </div>
+
+          <!-- Metadata Grid -->
+          <div class="grid grid-cols-2 gap-2 text-xs bg-slate-950/60 p-3 rounded-lg border border-slate-800/80">
+            <div>
+              <span class="text-slate-500">Estimated Effort:</span>
+              <p id="detailHours" class="font-semibold text-slate-200 font-mono">16.0 hrs</p>
+            </div>
+            <div>
+              <span class="text-slate-500">Complexity:</span>
+              <p id="detailComplexity" class="font-semibold text-slate-200 uppercase">HIGH</p>
+            </div>
+            <div>
+              <span class="text-slate-500">Planned Start:</span>
+              <p id="detailStart" class="text-slate-300 font-mono text-[11px]">2026-11-03</p>
+            </div>
+            <div>
+              <span class="text-slate-500">Deadline:</span>
+              <p id="detailDeadline" class="text-slate-300 font-mono text-[11px]">2026-11-10</p>
+            </div>
+          </div>
+
+          <!-- Required Skills -->
+          <div>
+            <span class="text-xs text-slate-400 font-medium block mb-1.5">Required Skills:</span>
+            <div id="detailSkills" class="flex flex-wrap gap-1.5">
+              <span class="text-xs bg-slate-800 border border-slate-700 px-2 py-0.5 rounded text-slate-300 font-mono">Python ≥ 75 (Mandatory)</span>
+              <span class="text-xs bg-slate-800 border border-slate-700 px-2 py-0.5 rounded text-slate-300 font-mono">FastAPI ≥ 70 (Mandatory)</span>
+              <span class="text-xs bg-slate-800 border border-slate-700 px-2 py-0.5 rounded text-slate-400 font-mono">PostgreSQL ≥ 50</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Execution Configuration Card -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+        <h2 class="text-sm font-semibold text-white flex items-center gap-2">
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+          Run Parameters
+        </h2>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Execution Mode:</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" id="btnModeStream" onclick="setRunMode('stream')" class="px-3 py-2 text-xs font-medium rounded-lg border border-emerald-500 bg-emerald-500/10 text-emerald-300 flex items-center justify-center gap-1.5 transition">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+              Live SSE Stream
+            </button>
+            <button type="button" id="btnModeDirect" onclick="setRunMode('direct')" class="px-3 py-2 text-xs font-medium rounded-lg border border-slate-700 bg-slate-800 text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1.5 transition">
+              Direct Async
+            </button>
+          </div>
+          <p id="modeDesc" class="text-[11px] text-slate-400 mt-1">Streams LangGraph node transitions and tool calls in real time.</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">As-Of Reference Timestamp:</label>
+          <input type="text" id="asOfInput" value="2026-11-03T10:00:00+02:00" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-emerald-500">
+          <p class="text-[10px] text-slate-400 mt-1">Matches the demo data reference date for deterministic scoring.</p>
+        </div>
+
+        <!-- Primary Action Button -->
+        <button id="btnRunAgent" onclick="runRecommendationAgent()" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl shadow-lg transition flex items-center justify-center gap-2 group pulse-glow">
+          <svg id="runIcon" class="w-5 h-5 text-emerald-200 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <span id="runBtnText">Run Recommendation Agent</span>
+        </button>
+
+        <p class="text-[11px] text-center text-slate-400 italic">
+          SprintMatch AI never auto-assigns tasks. Recommendations are advisory for the project manager.
+        </p>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Live Pipeline Progress & Recommendation Results (8 cols) -->
+    <div class="lg:col-span-8 flex flex-col gap-6">
+
+      <!-- Visual LangGraph Pipeline Tracker -->
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-semibold text-white flex items-center gap-2">
+            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            LangGraph Execution Pipeline (16 Nodes)
+          </h2>
+          <span id="execTimer" class="text-xs font-mono text-slate-400">Idle</span>
+        </div>
+
+        <!-- 8-Stage Node Pipeline Visualizer -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs" id="pipelineStages">
+          <div id="step-validate_request" class="p-2.5 rounded-lg border border-slate-800 bg-slate-950/60 text-slate-400 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-slate-700 node-dot"></span>
+            <span class="truncate">1. Request & Context</span>
+          </div>
+          <div id="step-task_analysis" class="p-2.5 rounded-lg border border-slate-800 bg-slate-950/60 text-slate-400 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-slate-700 node-dot"></span>
+            <span class="truncate">2. Task Analysis</span>
+          </div>
+          <div id="step-workforce_research_agent" class="p-2.5 rounded-lg border border-slate-800 bg-slate-950/60 text-slate-400 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-slate-700 node-dot"></span>
+            <span class="truncate">3. LLM DB Research</span>
+          </div>
+          <div id="step-load_authoritative_data" class="p-2.5 rounded-lg border border-slate-800 bg-slate-950/60 text-slate-400 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-slate-700 node-dot"></span>
+            <span class="truncate">4. Authoritative 360</span>
+          </div>
+          <div id="step-calculate_availability" class="p-2.5 rounded-lg border border-slate-800 bg-slate-950/60 text-slate-400 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-slate-700 node-dot"></span>
+            <span class="truncate">5. Workload & Cap.</span>
+          </div>
+          <div id="step-eligibility_filter" class="p-2.5 rounded-lg border border-slate-800 bg-slate-950/60 text-slate-400 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-slate-700 node-dot"></span>
+            <span class="truncate">6. Eligibility Filter</span>
+          </div>
+          <div id="step-recommendation_engine" class="p-2.5 rounded-lg border border-slate-800 bg-slate-950/60 text-slate-400 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-slate-700 node-dot"></span>
+            <span class="truncate">7. Deterministic Rank</span>
+          </div>
+          <div id="step-save_recommendation" class="p-2.5 rounded-lg border border-slate-800 bg-slate-950/60 text-slate-400 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-slate-700 node-dot"></span>
+            <span class="truncate">8. Validate & Save</span>
+          </div>
+        </div>
+
+        <!-- Live Streaming Events / Tool Execution Collapsible Log -->
+        <div class="mt-3">
+          <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+            <span>Agent Event Stream & DB Tool Calls:</span>
+            <span id="toolCallsCount" class="font-mono text-emerald-400">0 tools executed</span>
+          </div>
+          <div id="streamConsole" class="bg-slate-950 border border-slate-800 rounded-lg p-2.5 font-mono text-[11px] h-24 overflow-y-auto text-slate-400 space-y-1">
+            <div class="text-slate-600 italic">Ready to run. Click "Run Recommendation Agent" to begin execution.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results View Container -->
+      <div id="resultsContainer" class="space-y-6">
+
+        <!-- Initial Placeholder State -->
+        <div id="placeholderState" class="bg-slate-900 border border-dashed border-slate-800 rounded-xl p-12 text-center text-slate-500">
+          <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-3 text-slate-400 text-xl">
+            📊
+          </div>
+          <h3 class="text-sm font-semibold text-slate-300 mb-1">No Active Recommendation</h3>
+          <p class="text-xs text-slate-500 max-w-sm mx-auto">
+            Choose a Scrum task from the left panel and click Run. The LangGraph agent will evaluate all candidate employees across 7 weighted score dimensions.
+          </p>
+        </div>
+
+        <!-- Actual Results (Hidden initially) -->
+        <div id="activeResultBox" class="hidden space-y-6">
+
+          <!-- Execution Summary Header Card -->
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <span id="statusPill" class="px-3 py-1 rounded-full text-xs font-bold uppercase bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                SUCCESS
+              </span>
+              <div>
+                <span class="text-xs text-slate-400">Run ID:</span>
+                <span id="runIdText" class="font-mono text-xs text-slate-200">--</span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-4 text-xs font-mono">
+              <div>
+                <span class="text-slate-500">Model:</span>
+                <span id="metaModel" class="text-slate-300">openai/gpt-oss-120b</span>
+              </div>
+              <div>
+                <span class="text-slate-500">Tokens:</span>
+                <span id="metaTokens" class="text-emerald-400">0</span>
+              </div>
+              <div>
+                <span class="text-slate-500">Execution Time:</span>
+                <span id="metaLatency" class="text-slate-300">--</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 1. PRIMARY CANDIDATE (HERO CARD) -->
+          <div class="bg-gradient-to-br from-slate-900 to-slate-850 border-2 border-emerald-500/40 rounded-xl p-6 shadow-xl relative overflow-hidden">
+            <div class="absolute -top-12 -right-12 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
+              <div class="flex items-center gap-4">
+                <div id="candAvatar" class="w-16 h-16 rounded-xl bg-emerald-600/30 border border-emerald-500/50 flex items-center justify-center text-emerald-300 font-bold text-2xl">
+                  AH
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="text-[11px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
+                      Primary Recommendation
+                    </span>
+                    <span id="candCode" class="text-xs font-mono text-slate-400">EMP-001</span>
+                  </div>
+                  <h2 id="candName" class="text-2xl font-bold text-white mt-1">Ahmed Hassan</h2>
+                  <p id="candRole" class="text-xs text-slate-400 mt-0.5">Status: AVAILABLE (PRESENT) · 18.2h Capacity</p>
+                </div>
+              </div>
+
+              <!-- Score Hero Gauge -->
+              <div class="flex items-center gap-5 bg-slate-950/70 border border-slate-800 p-4 rounded-xl">
+                <div class="text-right">
+                  <div class="text-3xl font-extrabold text-emerald-400 font-mono" id="candScore">85.5</div>
+                  <span class="text-[11px] text-slate-400 uppercase tracking-wider font-medium">Suitability Score</span>
+                </div>
+                <div class="h-10 w-px bg-slate-800"></div>
+                <div>
+                  <div class="text-xl font-bold text-indigo-400 font-mono" id="candCoverage">100%</div>
+                  <span class="text-[11px] text-slate-400 uppercase tracking-wider font-medium">Data Coverage</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 7 Score Components Breakdown -->
+            <div class="mt-4 pt-4 border-t border-slate-800">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  Score Components Breakdown (Pure Deterministic Policy v1.1):
+                </h3>
+                <span class="text-[11px] text-slate-400">Click any component to inspect evidence</span>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs" id="componentsGrid">
+                <!-- Dynamically populated from candidate.score_components -->
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. GROUNDED AI EXPLANATION CARD (PROMINENT & EXPANDABLE) -->
+          <div class="bg-slate-900 border border-indigo-500/40 rounded-xl p-6 shadow-md space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div class="flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-300 flex items-center justify-center font-bold text-sm">
+                  💡
+                </div>
+                <div>
+                  <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    Grounded AI Explanation & Justification
+                  </h3>
+                  <p class="text-[11px] text-slate-400">Fact-checked reasoning linking task requirements to verified candidate evidence</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span id="explanationSourceBadge" class="text-[11px] font-mono px-2.5 py-1 rounded-md bg-indigo-500/10 text-indigo-300 border border-indigo-500/30">
+                  Source: LLM (Grounding Checked)
+                </span>
+                <button onclick="copyExplanation()" class="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-md border border-slate-700 transition" title="Copy Explanation text">
+                  📋 Copy
+                </button>
+              </div>
+            </div>
+            <div id="explanationBody" class="text-xs text-slate-200 leading-relaxed space-y-2 bg-slate-950/70 p-4 rounded-lg border border-slate-800 font-sans">
+              <!-- Explanation text -->
+            </div>
+          </div>
+
+          <!-- 3. RANKED ALTERNATIVES SECTION -->
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-400 font-bold text-xs flex items-center justify-center border border-emerald-500/20">🥈</span>
+                <h3 class="text-sm font-bold text-white">Ranked Alternatives</h3>
+                <span id="altCountBadge" class="text-xs font-semibold bg-slate-800 text-emerald-400 border border-slate-700 px-2 py-0.5 rounded-full">2 Qualified</span>
+              </div>
+              <p class="text-xs text-slate-400">Eligible runner-up candidates evaluated with deterministic ranking</p>
+            </div>
+            <div id="alternativesList" class="space-y-3">
+              <!-- Dynamically populated alternatives cards -->
+            </div>
+          </div>
+
+          <!-- 4. DISQUALIFIED CANDIDATES SECTION -->
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded-md bg-red-500/10 text-red-400 font-bold text-xs flex items-center justify-center border border-red-500/20">🚫</span>
+                <h3 class="text-sm font-bold text-white">Disqualified / Excluded Candidates</h3>
+                <span id="exCountBadge" class="text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded-full">26 Employees</span>
+              </div>
+
+              <!-- Search/filter within excluded candidates -->
+              <div class="flex items-center gap-2">
+                <input type="text" id="excludedSearch" oninput="filterExcludedCandidates()" placeholder="Filter by name or reason..." class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-emerald-500 w-56">
+              </div>
+            </div>
+
+            <p class="text-xs text-slate-400">
+              Employees who failed hard constraints (missing mandatory skills, zero capacity, approved leave, or missing required certifications):
+            </p>
+
+            <div id="excludedList" class="space-y-2 max-h-96 overflow-y-auto pr-1">
+              <!-- Dynamically populated excluded cards -->
+            </div>
+          </div>
+
+          <!-- 5. RAW JSON AUDIT DRAWER -->
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm">
+            <details class="cursor-pointer">
+              <summary class="text-xs font-semibold text-slate-400 hover:text-white flex items-center justify-between">
+                <span>View Full Audit & Execution Payload (Raw JSON)</span>
+                <span class="font-mono text-[11px] text-slate-500">Click to expand</span>
+              </summary>
+              <pre id="rawJsonText" class="mt-3 text-[11px] font-mono bg-slate-950 p-4 rounded-lg overflow-x-auto text-emerald-300 max-h-80 border border-slate-800"></pre>
+            </details>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-bold text-white">Connection & Authentication Settings</h3>
+        <button onclick="toggleModal('settingsModal')" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-medium text-slate-400 mb-1">FastAPI Backend URL:</label>
+          <input type="text" id="configApiUrl" value="" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 font-mono" placeholder="http://127.0.0.1:8000">
+          <p class="text-[10px] text-slate-400 mt-1">Leave empty to use the current host (`window.location.origin`).</p>
+        </div>
+
+        <div>
+          <label class="block font-medium text-slate-400 mb-1">API Key (Header `X-API-Key`):</label>
+          <input type="text" id="configApiKey" value="dev-manager-key" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 font-mono">
+          <div class="flex gap-2 mt-1">
+            <button onclick="setApiKey('dev-manager-key')" class="text-[10px] text-emerald-400 hover:underline">dev-manager-key (Manager)</button>
+            <span class="text-slate-600">·</span>
+            <button onclick="setApiKey('dev-viewer-key')" class="text-[10px] text-indigo-400 hover:underline">dev-viewer-key (Viewer)</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-medium text-slate-400 mb-1">Tenant Company Code:</label>
+          <input type="text" id="configCompany" value="NDS" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 font-mono">
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
+        <button onclick="toggleModal('settingsModal')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium">Cancel</button>
+        <button onclick="saveSettings()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold">Save & Recheck</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State
+    let runMode = 'stream'; // 'stream' or 'direct'
+    let currentTasks = [];
+    let currentResult = null;
+    let allExcludedCandidates = [];
+    let timerInterval = null;
+    let startTime = 0;
+
+    // Config defaults
+    let API_BASE = window.location.origin.includes('http') ? window.location.origin : 'http://127.0.0.1:8000';
+    let API_KEY = localStorage.getItem('sprintmatch_api_key') || 'dev-manager-key';
+
+    // Auto-initialize
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('configApiUrl').value = API_BASE;
+      document.getElementById('configApiKey').value = API_KEY;
+      checkHealth();
+      fetchTasks();
+    });
+
+    function toggleModal(id) {
+      const el = document.getElementById(id);
+      el.classList.toggle('hidden');
+    }
+
+    function setApiKey(key) {
+      document.getElementById('configApiKey').value = key;
+    }
+
+    function saveSettings() {
+      const customUrl = document.getElementById('configApiUrl').value.trim();
+      API_BASE = customUrl || (window.location.origin.includes('http') ? window.location.origin : 'http://127.0.0.1:8000');
+      API_KEY = document.getElementById('configApiKey').value.trim() || 'dev-manager-key';
+      localStorage.setItem('sprintmatch_api_key', API_KEY);
+      toggleModal('settingsModal');
+      checkHealth();
+      fetchTasks();
+    }
+
+    function setRunMode(mode) {
+      runMode = mode;
+      const btnStream = document.getElementById('btnModeStream');
+      const btnDirect = document.getElementById('btnModeDirect');
+      const desc = document.getElementById('modeDesc');
+
+      if (mode === 'stream') {
+        btnStream.className = 'px-3 py-2 text-xs font-medium rounded-lg border border-emerald-500 bg-emerald-500/10 text-emerald-300 flex items-center justify-center gap-1.5 transition';
+        btnDirect.className = 'px-3 py-2 text-xs font-medium rounded-lg border border-slate-700 bg-slate-800 text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1.5 transition';
+        desc.innerText = 'Streams LangGraph node transitions and tool calls in real time (SSE).';
+      } else {
+        btnDirect.className = 'px-3 py-2 text-xs font-medium rounded-lg border border-emerald-500 bg-emerald-500/10 text-emerald-300 flex items-center justify-center gap-1.5 transition';
+        btnStream.className = 'px-3 py-2 text-xs font-medium rounded-lg border border-slate-700 bg-slate-800 text-slate-400 hover:text-slate-200 flex items-center justify-center gap-1.5 transition';
+        desc.innerText = 'Standard async REST execution directly returning final result.';
+      }
+    }
+
+    async function checkHealth() {
+      const dot = document.getElementById('healthDot');
+      const text = document.getElementById('healthText');
+      const modeText = document.getElementById('modeText');
+      try {
+        const res = await fetch(`${API_BASE}/ready`, { headers: { 'X-API-Key': API_KEY } });
+        if (res.ok) {
+          const data = await res.json();
+          dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+          text.innerText = `API Ready (${data.database === 'ok' ? 'DB Online' : data.database})`;
+          
+          try {
+            const agentRes = await fetch(`${API_BASE}/api/v1/health/agent`, { headers: { 'X-API-Key': API_KEY } });
+            if (agentRes.ok) {
+              const agentData = await agentRes.json();
+              modeText.innerText = agentData.agent_mode || 'native';
+            }
+          } catch(e) {}
+        } else {
+          dot.className = 'w-2 h-2 rounded-full bg-red-400';
+          text.innerText = `HTTP ${res.status}`;
+        }
+      } catch (err) {
+        dot.className = 'w-2 h-2 rounded-full bg-red-500';
+        text.innerText = 'Offline / Error';
+      }
+    }
+
+    async function fetchTasks() {
+      const select = document.getElementById('taskSelect');
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/tasks?limit=100`, {
+          headers: { 'X-API-Key': API_KEY }
+        });
+        if (!res.ok) throw new Error('Failed to fetch tasks');
+        const data = await res.json();
+        currentTasks = data.items || [];
+
+        select.innerHTML = '<option value="">-- Choose a task from database --</option>';
+        currentTasks.forEach(t => {
+          const opt = document.createElement('option');
+          opt.value = t.task_code;
+          opt.innerText = `${t.task_code} - ${t.title} (${t.status}, ${t.estimated_hours || '?'}h)`;
+          select.appendChild(opt);
+        });
+
+        loadScenario('TASK-SCN-01');
+      } catch (e) {
+        select.innerHTML = '<option value="">(Failed to load tasks - check connection)</option>';
+      }
+    }
+
+    function onTaskSelectChange() {
+      const code = document.getElementById('taskSelect').value;
+      if (code) {
+        document.getElementById('taskCodeInput').value = code;
+        inspectTaskByCode();
+      }
+    }
+
+    function loadScenario(code) {
+      document.getElementById('taskCodeInput').value = code;
+      const select = document.getElementById('taskSelect');
+      if (select) select.value = code;
+      inspectTaskByCode();
+    }
+
+    function inspectTaskByCode() {
+      const code = document.getElementById('taskCodeInput').value.trim();
+      if (!code) return;
+
+      const task = currentTasks.find(t => t.task_code === code);
+      if (task) {
+        renderTaskDetails(task);
+      } else {
+        document.getElementById('detailTitle').innerText = code;
+        document.getElementById('detailProject').innerText = 'Custom Task';
+        document.getElementById('detailPriority').innerText = 'MEDIUM';
+        document.getElementById('detailHours').innerText = '16.0 hrs';
+        document.getElementById('detailComplexity').innerText = 'HIGH';
+        document.getElementById('detailStart').innerText = '2026-11-03';
+        document.getElementById('detailDeadline').innerText = '2026-11-10';
+        document.getElementById('detailSkills').innerHTML = '<span class="text-xs bg-slate-800 border border-slate-700 px-2 py-0.5 rounded text-slate-400 font-mono">Will be resolved by Task Analysis node</span>';
+      }
+    }
+
+    function renderTaskDetails(task) {
+      document.getElementById('detailTitle').innerText = task.title;
+      document.getElementById('detailProject').innerText = task.project_name || 'Project';
+      document.getElementById('detailPriority').innerText = task.priority || 'MEDIUM';
+      document.getElementById('detailHours').innerText = `${task.estimated_hours || 0} hrs`;
+      document.getElementById('detailComplexity').innerText = (task.complexity || 'MEDIUM').toUpperCase();
+      document.getElementById('detailStart').innerText = (task.planned_start || '').split('T')[0] || '2026-11-03';
+      document.getElementById('detailDeadline').innerText = (task.deadline || '').split('T')[0] || '2026-11-10';
+
+      const skillsBox = document.getElementById('detailSkills');
+      skillsBox.innerHTML = '';
+      if (task.required_skills && task.required_skills.length > 0) {
+        task.required_skills.forEach(s => {
+          const span = document.createElement('span');
+          span.className = `text-xs px-2 py-0.5 rounded font-mono ${s.mandatory ? 'bg-emerald-950/70 text-emerald-300 border border-emerald-500/40' : 'bg-slate-800 text-slate-300 border border-slate-700'}`;
+          span.innerText = `${s.skill_name} ≥ ${s.minimum_level}${s.mandatory ? ' (Mandatory)' : ''}`;
+          skillsBox.appendChild(span);
+        });
+      } else {
+        skillsBox.innerHTML = '<span class="text-xs text-slate-500 italic">No specific skills configured</span>';
+      }
+    }
+
+    function resetPipelineVisuals() {
+      const nodes = [
+        'validate_request', 'task_analysis', 'workforce_research_agent',
+        'load_authoritative_data', 'calculate_availability', 'eligibility_filter',
+        'recommendation_engine', 'save_recommendation'
+      ];
+      nodes.forEach(n => {
+        const el = document.getElementById(`step-${n}`);
+        if (el) {
+          el.className = 'p-2.5 rounded-lg border border-slate-800 bg-slate-950/60 text-slate-400 flex items-center gap-2';
+          const dot = el.querySelector('.node-dot');
+          if (dot) dot.className = 'w-2 h-2 rounded-full bg-slate-700 node-dot';
+        }
+      });
+      document.getElementById('streamConsole').innerHTML = '';
+      document.getElementById('toolCallsCount').innerText = '0 tools executed';
+    }
+
+    function highlightNode(nodeName) {
+      let target = nodeName;
+      if (nodeName === 'load_task_context') target = 'validate_request';
+      if (nodeName === 'tool_execution') target = 'workforce_research_agent';
+      if (nodeName === 'build_employee_context') target = 'load_authoritative_data';
+      if (nodeName === 'calculate_workload') target = 'calculate_availability';
+      if (nodeName === 'performance_analysis') target = 'eligibility_filter';
+      if (nodeName === 'explanation_agent') target = 'recommendation_engine';
+      if (nodeName === 'final_validation') target = 'save_recommendation';
+
+      const el = document.getElementById(`step-${target}`);
+      if (el) {
+        el.className = 'p-2.5 rounded-lg border border-emerald-500/60 bg-emerald-500/10 text-emerald-300 flex items-center gap-2 font-medium';
+        const dot = el.querySelector('.node-dot');
+        if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse node-dot';
+      }
+    }
+
+    function appendConsole(msg, isTool = false) {
+      const consoleBox = document.getElementById('streamConsole');
+      const line = document.createElement('div');
+      line.className = isTool ? 'text-amber-300/90 pl-3 border-l-2 border-amber-500/40' : 'text-slate-300';
+      line.innerText = msg;
+      consoleBox.appendChild(line);
+      consoleBox.scrollTop = consoleBox.scrollHeight;
+    }
+
+    async function runRecommendationAgent() {
+      const taskCode = document.getElementById('taskCodeInput').value.trim();
+      const asOf = document.getElementById('asOfInput').value.trim();
+      if (!taskCode) {
+        alert('Please enter or select a task code.');
+        return;
+      }
+
+      resetPipelineVisuals();
+      const btn = document.getElementById('btnRunAgent');
+      const btnText = document.getElementById('runBtnText');
+      btn.disabled = true;
+      btn.classList.add('opacity-75', 'cursor-not-allowed');
+      btnText.innerText = 'Evaluating Workforce...';
+
+      startTime = Date.now();
+      clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        const secs = ((Date.now() - startTime) / 1000).toFixed(1);
+        document.getElementById('execTimer').innerText = `${secs}s elapsed`;
+      }, 100);
+
+      const requestBody = {
+        task_code: taskCode,
+        as_of: asOf || null
+      };
+
+      try {
+        if (runMode === 'stream') {
+          await runStreamRequest(requestBody);
+        } else {
+          await runDirectRequest(requestBody);
+        }
+      } catch (err) {
+        appendConsole(`❌ Execution error: ${err.message}`);
+        alert(`Error executing agent: ${err.message}`);
+      } finally {
+        clearInterval(timerInterval);
+        btn.disabled = false;
+        btn.classList.remove('opacity-75', 'cursor-not-allowed');
+        btnText.innerText = 'Run Recommendation Agent';
+      }
+    }
+
+    async function runDirectRequest(requestBody) {
+      appendConsole(`[INIT] Sending POST /api/v1/agent/recommend for ${requestBody.task_code}...`);
+      highlightNode('validate_request');
+
+      const res = await fetch(`${API_BASE}/api/v1/agent/recommend`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': API_KEY
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error ? errJson.error.message : `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      appendConsole(`[DONE] Recommendation completed with status ${data.status}`);
+      renderRecommendationResults(data);
+    }
+
+    async function runStreamRequest(requestBody) {
+      appendConsole(`[START] Connecting to SSE stream (/api/v1/agent/recommend/stream)...`);
+      let toolCount = 0;
+
+      const res = await fetch(`${API_BASE}/api/v1/agent/recommend/stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': API_KEY
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error ? errJson.error.message : `HTTP ${res.status}`);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop();
+
+        for (const part of parts) {
+          if (!part.trim()) continue;
+          let eventType = 'message';
+          let eventData = '';
+
+          const lines = part.split('\n');
+          for (const line of lines) {
+            if (line.startsWith('event: ')) eventType = line.substring(7).trim();
+            if (line.startsWith('data: ')) eventData = line.substring(6).trim();
+          }
+
+          if (eventData) {
+            try {
+              const payload = JSON.parse(eventData);
+              if (eventType === 'started') {
+                appendConsole(`🚀 Agent run started. ID: ${payload.recommendation_id} (mode: ${payload.agent_mode})`);
+              } else if (eventType === 'node') {
+                highlightNode(payload.node);
+                appendConsole(`▸ Node completed: ${payload.node} (${payload.duration_ms || 0}ms)`);
+              } else if (eventType === 'tool') {
+                toolCount++;
+                document.getElementById('toolCallsCount').innerText = `${toolCount} tools executed`;
+                appendConsole(`🛠️ DB Tool: ${payload.tool} (status: ${payload.status || 'ok'}, ${payload.duration_ms || 0}ms)`, true);
+              } else if (eventType === 'result') {
+                // IMPORTANT: The backend emits {"event": "result", "recommendation": {...}}
+                const recommendationData = payload.recommendation || payload.data || payload;
+                appendConsole(`✨ Recommendation generated. Primary candidate: ${recommendationData?.primary_candidate?.name || 'None'}`);
+                renderRecommendationResults(recommendationData);
+              }
+            } catch(e) {
+              console.error('SSE JSON parse error:', e);
+            }
+          }
+        }
+      }
+    }
+
+    function renderRecommendationResults(data) {
+      if (!data) return;
+      currentResult = data;
+      document.getElementById('placeholderState').classList.add('hidden');
+      document.getElementById('activeResultBox').classList.remove('hidden');
+
+      // 1. Summary Header
+      document.getElementById('statusPill').innerText = data.status || 'SUCCESS';
+      document.getElementById('runIdText').innerText = data.recommendation_id || '--';
+      document.getElementById('metaModel').innerText = data.llm_model || 'openai/gpt-oss-120b';
+      const promptTok = data.llm_usage?.prompt_tokens || 0;
+      const compTok = data.llm_usage?.completion_tokens || 0;
+      document.getElementById('metaTokens').innerText = `${promptTok + compTok} (${promptTok} prompt / ${compTok} comp)`;
+      document.getElementById('metaLatency').innerText = `${((data.execution_time_ms || (Date.now() - startTime)) / 1000).toFixed(1)}s`;
+
+      // 2. Primary Candidate
+      const p = data.primary_candidate;
+      if (p) {
+        document.getElementById('candAvatar').innerText = (p.name || 'EM').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        document.getElementById('candName').innerText = p.name;
+        document.getElementById('candCode').innerText = p.employee_code;
+        document.getElementById('candRole').innerText = `Status: ${p.availability_status || 'AVAILABLE'} (${p.presence || 'PRESENT'}) · Available Capacity: ${p.available_hours || 0}h (Certainty: ${p.workload_certainty || 'CERTAIN'})`;
+        document.getElementById('candScore').innerText = p.suitability_score != null ? Number(p.suitability_score).toFixed(1) : '--';
+        document.getElementById('candCoverage').innerText = `${Math.round((p.data_coverage || 1) * 100)}%`;
+
+        renderComponentsGrid(p.score_components || []);
+      } else {
+        document.getElementById('candName').innerText = 'No Suitable Candidate Found';
+        document.getElementById('candCode').innerText = 'N/A';
+        document.getElementById('candRole').innerText = 'No employee satisfies all mandatory constraints';
+        document.getElementById('candScore').innerText = '0.0';
+        document.getElementById('candCoverage').innerText = '0%';
+        document.getElementById('componentsGrid').innerHTML = '<p class="text-xs text-slate-500 italic p-3">No score components available.</p>';
+      }
+
+      // 3. Grounded Explanation (Direct & Prominent)
+      document.getElementById('explanationSourceBadge').innerText = `Source: ${data.explanation_source === 'llm' ? 'LLM (Grounding Checked)' : 'Deterministic Fallback'}`;
+      const expBody = document.getElementById('explanationBody');
+      const rawExp = (data.explanation || 'No explanation generated by agent.').replace(/\u202f/g, ' ');
+      
+      // Parse markdown-style bullet points cleanly
+      const bulletLines = rawExp.split('\n').filter(l => l.trim().length > 0);
+      expBody.innerHTML = bulletLines.map(line => {
+        let clean = line.trim();
+        if (clean.startsWith('- ') || clean.startsWith('* ')) {
+          clean = clean.substring(2);
+        }
+        // Bold headers e.g. "Mandatory skills:"
+        clean = clean.replace(/^([^:]+:)/, '<strong class="text-white font-semibold">$1</strong>');
+        // Highlight numbers & percentages
+        clean = clean.replace(/(\d+(\.\d+)?(\s?%)?)/g, '<span class="font-mono text-emerald-300">$1</span>');
+        return `
+          <div class="flex items-start gap-2.5 py-1">
+            <span class="text-emerald-400 mt-0.5">•</span>
+            <div class="text-slate-200 leading-relaxed">${clean}</div>
+          </div>
+        `;
+      }).join('');
+
+      // 4. Ranked Alternatives
+      renderAlternatives(data.alternatives || [], p ? p.suitability_score : null);
+
+      // 5. Disqualified Candidates
+      allExcludedCandidates = data.excluded_candidates || [];
+      renderExcluded(allExcludedCandidates);
+
+      // 6. Raw JSON
+      document.getElementById('rawJsonText').innerText = JSON.stringify(data, null, 2);
+    }
+
+    function renderComponentsGrid(componentsList) {
+      const grid = document.getElementById('componentsGrid');
+      grid.innerHTML = '';
+
+      const CRITERIA_METADATA = {
+        'SKILL_MATCH': { title: '🎯 Skill Match', defaultWeight: '30%' },
+        'EXPERIENCE': { title: '💼 Experience Match', defaultWeight: '15%' },
+        'QUALITY': { title: '⭐ Historical Quality', defaultWeight: '15%' },
+        'RELIABILITY': { title: '⏱️ On-Time Delivery', defaultWeight: '10%' },
+        'CAPACITY': { title: '📅 Available Capacity', defaultWeight: '15%' },
+        'COMPLEXITY_FIT': { title: '🧩 Complexity Fit', defaultWeight: '10%' },
+        'PROJECT_FAMILIARITY': { title: '🏢 Project Familiarity', defaultWeight: '5%' },
+      };
+
+      if (!componentsList || componentsList.length === 0) {
+        grid.innerHTML = '<p class="text-xs text-slate-500 italic p-3">No components found.</p>';
+        return;
+      }
+
+      componentsList.forEach(c => {
+        const meta = CRITERIA_METADATA[c.criterion] || { title: c.criterion, defaultWeight: '10%' };
+        const scoreVal = Number(c.score_used ?? c.raw_score ?? 0).toFixed(1);
+        const weightPct = c.weight != null ? `${Math.round(c.weight * 100)}%` : meta.defaultWeight;
+        const weightedScore = c.weighted_score != null ? Number(c.weighted_score).toFixed(1) : (scoreVal * (c.weight || 0.1)).toFixed(1);
+        const evidenceItems = c.evidence || [];
+
+        const barColor = scoreVal >= 80 ? 'bg-emerald-500' : (scoreVal >= 50 ? 'bg-amber-400' : 'bg-rose-500');
+
+        const card = document.createElement('div');
+        card.className = 'bg-slate-950/70 border border-slate-800 p-3.5 rounded-lg flex flex-col justify-between hover:border-slate-700 transition';
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <span class="font-semibold text-slate-200 text-xs">${meta.title}</span>
+              <div class="flex items-center gap-2">
+                <span class="text-[11px] font-mono text-slate-400">weighted: <span class="text-indigo-300 font-bold">${weightedScore}</span></span>
+                <span class="font-mono font-bold text-emerald-400 text-sm">${scoreVal}</span>
+              </div>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-1.5 mb-2 overflow-hidden">
+              <div class="${barColor} h-1.5 rounded-full transition-all duration-500" style="width: ${Math.min(100, Math.max(0, scoreVal))}%"></div>
+            </div>
+          </div>
+          <div class="space-y-1">
+            <div class="flex items-center justify-between text-[11px] text-slate-400">
+              <span>Weight: ${weightPct}</span>
+              <span class="text-[10px] text-slate-500">${c.has_evidence ? '✓ Evidence Verified' : 'Standard Baseline'}</span>
+            </div>
+            ${evidenceItems.length > 0 ? `
+              <div class="mt-1.5 pt-1.5 border-t border-slate-900/80 text-[11px] text-slate-400 space-y-0.5">
+                ${evidenceItems.map(ev => `<div class="truncate text-slate-400">• ${ev}</div>`).join('')}
+              </div>
+            ` : ''}
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function renderAlternatives(alts, primaryScore) {
+      const badge = document.getElementById('altCountBadge');
+      badge.innerText = `${alts.length} Qualified Candidates`;
+      const box = document.getElementById('alternativesList');
+      box.innerHTML = '';
+
+      if (alts.length === 0) {
+        box.innerHTML = '<p class="text-xs text-slate-500 italic p-3 bg-slate-950/40 rounded-lg border border-slate-800">No alternative qualified candidates were found for this task.</p>';
+        return;
+      }
+
+      alts.forEach((a, idx) => {
+        const score = a.suitability_score != null ? Number(a.suitability_score).toFixed(1) : '--';
+        const delta = (primaryScore != null && a.suitability_score != null) ? (a.suitability_score - primaryScore).toFixed(1) : null;
+        const deltaText = delta != null ? (delta > 0 ? `+${delta}` : delta) : '';
+
+        // Extract key highlights from score components
+        const highlights = (a.score_components || []).map(sc => {
+          if (sc.criterion === 'SKILL_MATCH') return `Skills: ${Number(sc.score_used).toFixed(0)}%`;
+          if (sc.criterion === 'CAPACITY') return `Capacity: ${Number(sc.score_used).toFixed(0)}%`;
+          return null;
+        }).filter(Boolean).join(' · ');
+
+        const div = document.createElement('div');
+        div.className = 'flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-slate-700 text-xs gap-3 transition';
+        div.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="w-7 h-7 rounded-lg bg-slate-800 text-slate-300 font-mono font-bold flex items-center justify-center text-xs border border-slate-700">#${a.rank || (idx + 2)}</span>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-white text-sm">${a.name}</span>
+                <span class="font-mono text-slate-400 text-xs">(${a.employee_code})</span>
+                <span class="px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${a.availability_status === 'AVAILABLE' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'}">${a.availability_status}</span>
+              </div>
+              <div class="text-[11px] text-slate-400 mt-1">
+                Available: <span class="text-slate-200 font-mono">${a.available_hours}h</span> · Coverage: <span class="text-slate-200 font-mono">${Math.round((a.data_coverage || 1) * 100)}%</span> ${highlights ? '· ' + highlights : ''}
+              </div>
+            </div>
+          </div>
+          <div class="sm:text-right flex sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-800">
+            <div class="flex items-center gap-1.5">
+              <span class="font-mono font-extrabold text-white text-base">${score}</span>
+              ${deltaText ? `<span class="text-[11px] font-mono text-amber-400 font-semibold">(${deltaText})</span>` : ''}
+            </div>
+            <div class="text-[10px] text-slate-500 uppercase tracking-wider">Suitability Score</div>
+          </div>
+        `;
+        box.appendChild(div);
+      });
+    }
+
+    function renderExcluded(excludedList) {
+      const badge = document.getElementById('exCountBadge');
+      badge.innerText = `${excludedList.length} Disqualified Employees`;
+      const box = document.getElementById('excludedList');
+      box.innerHTML = '';
+
+      if (excludedList.length === 0) {
+        box.innerHTML = '<p class="text-xs text-slate-500 italic p-3 bg-slate-950/40 rounded-lg border border-slate-800">No candidates were disqualified.</p>';
+        return;
+      }
+
+      excludedList.forEach(e => {
+        const div = document.createElement('div');
+        div.className = 'p-3.5 rounded-lg bg-slate-950/50 border border-slate-800/90 text-xs flex flex-col md:flex-row md:items-center justify-between gap-2.5 hover:border-slate-700 transition';
+
+        const reasonsList = e.exclusion_reasons || [];
+        const reasonsHtml = reasonsList.map(r => `
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="bg-rose-500/10 text-rose-300 border border-rose-500/20 px-2 py-0.5 rounded text-[11px] font-mono font-medium">${r.code}</span>
+            <span class="text-slate-300 text-[11px]">${r.message}</span>
+          </div>
+        `).join('');
+
+        div.innerHTML = `
+          <div class="min-w-[190px]">
+            <div class="font-semibold text-slate-200 text-xs flex items-center gap-1.5">
+              <span>${e.name}</span>
+              <span class="font-mono text-slate-400 text-[11px]">(${e.employee_code})</span>
+            </div>
+            <div class="text-[10px] text-slate-400 mt-0.5">
+              Presence: ${e.presence || 'UNKNOWN'} · Cap: ${e.available_hours || 0}h
+            </div>
+          </div>
+          <div class="flex-1 space-y-1">
+            ${reasonsHtml || '<span class="text-slate-500 italic text-[11px]">No specific exclusion reason recorded</span>'}
+          </div>
+        `;
+        box.appendChild(div);
+      });
+    }
+
+    function filterExcludedCandidates() {
+      const q = document.getElementById('excludedSearch').value.toLowerCase().trim();
+      if (!q) {
+        renderExcluded(allExcludedCandidates);
+        return;
+      }
+
+      const filtered = allExcludedCandidates.filter(e => {
+        const nameMatch = (e.name || '').toLowerCase().includes(q);
+        const codeMatch = (e.employee_code || '').toLowerCase().includes(q);
+        const reasonMatch = (e.exclusion_reasons || []).some(r => 
+          (r.code || '').toLowerCase().includes(q) || (r.message || '').toLowerCase().includes(q)
+        );
+        return nameMatch || codeMatch || reasonMatch;
+      });
+
+      renderExcluded(filtered);
+    }
+
+    function copyExplanation() {
+      if (!currentResult || !currentResult.explanation) return;
+      navigator.clipboard.writeText(currentResult.explanation).then(() => {
+        alert('Grounded explanation copied to clipboard!');
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+[project]
+name = "sprintmatch-ai"
+version = "0.1.0"
+description = "AI-powered employee task allocation and recommendation agent for Scrum teams"
+readme = "README.md"
+requires-python = ">=3.12"
+# Exact pins: resolved together with uv (see uv.lock / requirements.txt).
+dependencies = [
+    "alembic==1.20.1",
+    "fastapi==0.162.0",
+    "httpx==0.28.1",
+    "langchain-core==1.7.4",
+    "langgraph==1.2.19",
+    "langgraph-checkpoint-postgres==3.2.0",
+    "psycopg[binary]==3.3.6",
+    "psycopg-pool==3.3.3",
+    "pydantic==2.14.2",
+    "pydantic-settings==2.16.2",
+    "sqlalchemy==2.1.6",
+    "tzdata==2026.6",
+    "uvicorn[standard]==0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "mypy==2.4.1",
+    "pytest==9.2.0",
+    "ruff==0.17.3",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "integration: requires a reachable PostgreSQL (TEST_DATABASE_URL)",
+    "live: calls the real LLM provider from .env (opt-in: RUN_LIVE_LLM_TESTS=1)",
+]
+filterwarnings = ["error::DeprecationWarning:app.*"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+extend-exclude = [".local"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "S", "DTZ"]
+ignore = ["S101", "RUF012", "B008", "E501"]  # line length is enforced by `ruff format`
+
+[tool.ruff.lint.isort]
+known-third-party = ["alembic"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S", "DTZ"]
+"scripts/**" = ["S311"]
+"app/infrastructure/demo/**" = ["S311"]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["pydantic.mypy"]
+strict_optional = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+exclude = ["alembic/versions", ".local", "tests"]
