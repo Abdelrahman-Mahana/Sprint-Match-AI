@@ -151,6 +151,18 @@ class RecommendationEngine:
                 e.exclusion_reasons and all(r.code.is_data_gap for r in e.exclusion_reasons) for e in excluded
             ):
                 warnings.append("SOME_CANDIDATES_EXCLUDED_FOR_MISSING_DATA")
+            # Intelligent nearest alternative discovery
+            active_excluded = [
+                e for e in excluded
+                if e.availability_status != AvailabilityStatus.UNKNOWN
+            ]
+            if active_excluded:
+                best_near = max(active_excluded, key=lambda e: sum(c.weighted_score for c in e.criteria))
+                best_pts = round(sum(c.weighted_score for c in best_near.criteria), 1)
+                missing = [r.message for r in best_near.exclusion_reasons]
+                warnings.append(
+                    f"NEAREST_MATCH_INSIGHT:{best_near.employee_code}:{best_near.full_name} (Fit: {best_pts}%, Gap: {'; '.join(missing[:2])})"
+                )
 
         if not ranked:
             status = RecommendationStatus.NO_SUITABLE_CANDIDATE

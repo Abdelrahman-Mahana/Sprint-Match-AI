@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SprintMatch AI · Task Allocation & Workforce Intelligence Studio</title>
+
+  <!-- Fonts: Inter, Roboto & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Roboto:wght@300;400;500;700&display=swap"
+    rel="stylesheet">
+
+  <!-- FontAwesome 6 Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'Roboto', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+            mono: ['JetBrains Mono', 'ui-monospace', 'Menlo', 'monospace']
+          },
+          colors: {
+            odoo: {
+              primary: '#714B67',        // Classic Odoo 17 Plum Purple
+              'primary-dark': '#55384D',
+              'primary-light': '#8E6282',
+              'primary-tint': '#F8F4F7',
+              teal: '#00A09D',           // Odoo secondary action teal
+              'teal-dark': '#008481',
+              'teal-light': '#E6F6F6',
+              coral: '#E06F64',
+              canvas: '#F4F5F8',         // Clean enterprise webclient canvas
+              sheet: '#FFFFFF',          // Form sheet pure white
+              border: '#E2E8F0',
+              text: '#1E293B',
+              muted: '#64748B',
+            },
+            surface: {
+              0: '#0B0D11',
+              50: '#13161C',
+              100: '#1B1F27',
+              200: '#252B37',
+              300: '#323B4B',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <link rel="stylesheet" href="/ui/css/styles.css">
+</head>
+
+<body
+  class="bg-odoo-canvas dark:bg-surface-0 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col font-sans selection:bg-odoo-primary selection:text-white transition-colors duration-200">
+
+  <!-- ================= 1. CLEAN UNIFIED HEADER NAVBAR ================= -->
+  <header
+    class="bg-gradient-to-r from-odoo-primary via-[#67435E] to-[#55384D] dark:from-[#20151E] dark:to-[#170E15] text-white sticky top-0 z-40 px-5 sm:px-8 py-2.5 flex items-center justify-between shadow-md border-b border-black/10">
+
+    <!-- Left Navigation: Brand & 3 Core Tabs -->
+    <div class="flex items-center gap-4">
+      <!-- App Brand & Title -->
+      <div class="flex items-center gap-2.5 cursor-pointer" onclick="switchMainView('form')">
+        <span
+          class="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center text-odoo-teal text-base shadow-xs font-bold">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+        </span>
+        <div class="flex flex-col">
+          <span class="font-bold text-sm tracking-tight text-white leading-tight">SprintMatch AI</span>
+          <span class="text-[10px] text-white/70 font-medium">Scrum Agent & Database Studio</span>
+        </div>
+      </div>
+      <div class="h-5 w-px bg-white/20 hidden md:block mx-1"></div>
+
+      <!-- Clean 3 Core Navigation Tabs -->
+      <nav class="flex items-center gap-1.5 text-xs">
+        <!-- 1. Task Studio & AI Agent -->
+        <button onclick="switchMainView('form')" id="topNavForm"
+          class="px-3.5 py-1.5 rounded-lg bg-white/20 text-white font-semibold transition flex items-center gap-2 shadow-2xs">
+          <i class="fa-solid fa-file-waveform text-xs text-odoo-teal"></i>
+          <span>Task Studio & AI</span>
+        </button>
+
+        <!-- 2. Database Inspector -->
+        <button onclick="switchMainView('employees')" id="topNavEmployees"
+          class="px-3.5 py-1.5 rounded-lg hover:bg-white/10 text-white/80 hover:text-white transition flex items-center gap-2 font-medium">
+          <i class="fa-solid fa-database text-xs text-emerald-300"></i>
+          <span>Database Inspector</span>
+          <span class="text-[10px] px-1.5 py-0.2 rounded-full bg-odoo-teal text-white font-mono"
+            id="topEmployeeCount">34 Tables</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Center: Search Omni-bar -->
+    <div class="hidden lg:flex items-center flex-1 max-w-sm mx-6">
+      <div
+        class="w-full bg-black/25 hover:bg-black/30 focus-within:bg-white text-white focus-within:text-slate-800 rounded-lg px-3.5 py-1.5 flex items-center gap-2.5 border border-white/15 focus-within:border-white shadow-inner transition-all text-xs">
+        <i class="fa-solid fa-magnifying-glass text-white/60 focus-within:text-slate-400"></i>
+        <input type="text" id="odooOmniSearch" oninput="handleOmniSearch()"
+          placeholder="Search developers, skills, tasks..."
+          class="w-full bg-transparent border-none outline-none text-xs placeholder:text-white/60 focus-within:placeholder:text-slate-400">
+      </div>
+    </div>
+
+    <!-- Right Controls: DB Health, Theme, User -->
+    <div class="flex items-center gap-3">
+      <!-- Live API / Database Health & Connection Indicator -->
+      <button onclick="openDatabaseModal()" id="healthBadge"
+        class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/25 hover:bg-black/40 text-[11px] text-white/90 font-mono border border-white/10 transition cursor-pointer shadow-xs"
+        title="Manage Database Connection (إدارة الاتصال بقاعدة البيانات)">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" id="healthDot"></span>
+        <span id="healthText">PostgreSQL Connected</span>
+        <i class="fa-solid fa-plug text-[10px] text-odoo-teal ml-0.5"></i>
+      </button>
+
+      <!-- Dark/Light Theme Toggle -->
+      <button onclick="toggleTheme()" class="p-2 rounded-lg hover:bg-white/10 text-white/80 hover:text-white transition"
+        title="Toggle Light / Dark Mode">
+        <i id="themeIcon" class="fa-solid fa-moon text-xs"></i>
+      </button>
+
+      <!-- User Profile (Project Manager / Scrum Master) -->
+      <div onclick="toggleModal('settingsModal')"
+        class="flex items-center gap-2 pl-2 border-l border-white/20 cursor-pointer group" title="System Settings">
+        <div
+          class="w-8 h-8 rounded-full bg-white/20 border border-white/30 flex items-center justify-center font-bold text-xs text-white uppercase font-mono shadow-xs">
+          PM
+        </div>
+        <div class="hidden xl:block text-left text-xs leading-tight">
+          <div class="font-semibold text-white group-hover:underline">Project Manager</div>
+          <div class="text-[10px] text-white/70">Scrum Master</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= 3. MAIN WORKSPACE CONTAINER ================= -->
+  <main class="flex-1 px-4 sm:px-8 py-6 max-w-[1720px] w-full mx-auto">
+
+    <!-- ================= VIEW MODE A: EXPANDED ODOO 17 FORM SHEET VIEW ================= -->
+    <div id="viewFormContainer" class="max-w-6xl mx-auto space-y-6">
+
+      <!-- ================= CARD 1: TASK SPECIFICATION & ACTION CONSOLE ================= -->
+      <article
+        class="o-sheet rounded-2xl p-6 sm:p-8 space-y-6 shadow-sm border border-slate-200 dark:border-white/10 bg-white dark:bg-surface-50">
+
+        <!-- Header & Quick Preset Selector -->
+        <div
+          class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-white/10">
+          <div>
+            <div class="flex items-center gap-2.5">
+              <span
+                class="w-9 h-9 rounded-xl bg-odoo-primary/10 text-odoo-primary dark:text-pink-400 flex items-center justify-center text-base font-bold shadow-2xs">
+                <i class="fa-solid fa-pen-ruler"></i>
+              </span>
+              <div>
+                <h2 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white">Task Specification &
+                  Allocation Studio</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Enter task title & requirements. Run AI matching
+                  or assign a developer manually.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Template Presets Dropdown -->
+          <div class="flex items-center gap-2 self-start sm:self-auto">
+            <label for="taskPresetSelect"
+              class="text-xs font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">Load Template:</label>
+            <select id="taskPresetSelect" onchange="onPresetChange()"
+              class="bg-slate-50 dark:bg-surface-100 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-odoo-primary font-medium shadow-2xs max-w-xs sm:max-w-md">
+              <optgroup label="Core Backend & Distributed Systems">
+                <option value="BACKEND-REFUND" selected>Payment Refund API Engine (FastAPI, PostgreSQL, Redis, Kafka)
+                </option>
+                <option value="BACKEND-STREAM">Kafka Ledger Event Streamer (Kafka, Microservices, Python)</option>
+                <option value="BACKEND-WEBHOOK">Third-Party Webhook Dispatcher (FastAPI, Redis, Circuit Breaker)
+                </option>
+              </optgroup>
+              <optgroup label="Frontend & Web Experience">
+                <option value="FRONTEND-ANALYTICS">Financial Analytics Dashboard (React, Next.js, TypeScript)</option>
+                <option value="FRONTEND-CHECKOUT">Multi-Step Checkout State Flow (Next.js, Tailwind CSS)</option>
+              </optgroup>
+              <optgroup label="Mobile Systems & Edge">
+                <option value="MOBILE-BIOMETRIC">Merchant Biometrics & Vault (Flutter, Dart, Secure Storage)</option>
+                <option value="MOBILE-OFFLINE">Offline-First POS Sync Layer (Flutter, Local SQLite, Sync)</option>
+              </optgroup>
+              <optgroup label="Cloud, DevOps & SRE">
+                <option value="DEVOPS-K8S">Multi-Region Kubernetes Failover (Kubernetes, Terraform, AWS)</option>
+                <option value="DEVOPS-CICD">Hardened GitOps CI/CD Pipeline (Docker, CI/CD, Linux & Bash)</option>
+              </optgroup>
+              <optgroup label="Enterprise ERP & Odoo">
+                <option value="ODOO-COMMISSION">Odoo 17 Sales Commission Module (Odoo, Python, PostgreSQL)</option>
+                <option value="ODOO-INVENTORY">Multi-Warehouse Inventory Automation (Odoo 17, ERP Workflows)</option>
+              </optgroup>
+              <optgroup label="Quality Engineering & Testing (SDET)">
+                <option value="QA-PLAYWRIGHT">E2E Regression Automation Suite (Playwright, Python, CI/CD)</option>
+                <option value="QA-CYPRESS">Component & Contract Testing (Cypress, TypeScript, React)</option>
+              </optgroup>
+              <optgroup label="AI, Machine Learning & Data">
+                <option value="AI-RAG">Autonomous Compliance RAG Agent (LangChain, Machine Learning, Python)</option>
+                <option value="DATA-POSTGRES">PostgreSQL Ledger Optimization & Partitioning (PostgreSQL, DBA)</option>
+              </optgroup>
+              <optgroup label="Custom Task">
+                <option value="CUSTOM">Blank Form (Custom Specification)</option>
+              </optgroup>
+            </select>
+          </div>
+        </div>
+
+        <!-- Task Title Field -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
+            <span>Task Title <span class="text-rose-500">*</span></span>
+            <span class="text-[11px] text-slate-400 font-normal">What needs to be built</span>
+          </label>
+          <input type="text" id="taskTitleInput" placeholder="e.g. Build interactive payment analytics charts"
+            value="Build High-Throughput Idempotent Payment Refund API Engine"
+            class="w-full bg-slate-50 dark:bg-surface-100 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-odoo-primary focus:ring-2 focus:ring-odoo-primary/20 transition">
+        </div>
+
+        <!-- Task Description Field -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
+            <span>Task Description & Requirements <span class="text-rose-500">*</span></span>
+            <span class="text-[11px] text-slate-400 font-normal">AI extracts required skills, technologies, and context
+              automatically</span>
+          </label>
+          <textarea id="taskDescInput" rows="4"
+            placeholder="Detail the technical specifications, frameworks, deliverables, and acceptance criteria..."
+            class="w-full bg-slate-50 dark:bg-surface-100 border border-slate-200 dark:border-white/10 rounded-xl p-4 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-odoo-primary focus:ring-2 focus:ring-odoo-primary/20 leading-relaxed font-sans transition">Design and expose an asynchronous, idempotent REST endpoint using FastAPI and Python to process full and partial payment refunds. Persist transaction ledgers in PostgreSQL with atomic row-level locks, publish state-change events to Kafka, and implement Redis-backed idempotency caching.</textarea>
+        </div>
+
+        <!-- Task Metadata Parameters Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+          <div>
+            <label class="text-xs font-semibold text-slate-700 dark:text-slate-300">Estimated Effort</label>
+            <div class="relative mt-1">
+              <input type="number" id="taskHoursInput" step="1" min="1" max="200" value="16"
+                class="w-full bg-slate-50 dark:bg-surface-100 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-xs font-mono font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-odoo-primary">
+              <span class="absolute right-3 top-2 text-xs text-slate-400 font-mono">Hours</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="text-xs font-semibold text-slate-700 dark:text-slate-300">Complexity</label>
+            <select id="taskComplexityInput"
+              class="mt-1 w-full bg-slate-50 dark:bg-surface-100 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:border-odoo-primary">
+              <option value="low">Low Complexity</option>
+              <option value="medium">Medium Complexity</option>
+              <option value="high" selected>High Complexity</option>
+              <option value="critical">Critical Complexity</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-xs font-semibold text-slate-700 dark:text-slate-300">Priority</label>
+            <select id="taskPriorityInput"
+              class="mt-1 w-full bg-slate-50 dark:bg-surface-100 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:border-odoo-primary">
+              <option value="low">Low Priority</option>
+              <option value="medium">Medium Priority</option>
+              <option value="high" selected>High Priority</option>
+              <option value="urgent">Urgent Priority</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="text-xs font-semibold text-slate-700 dark:text-slate-300">Target Deadline</label>
+            <input type="date" id="taskDeadlineInput" value="2026-11-14"
+              class="mt-1 w-full bg-slate-50 dark:bg-surface-100 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-odoo-primary">
+          </div>
+        </div>
+
+        <!-- Primary Action Buttons Bar -->
+        <div
+          class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-200 dark:border-white/10">
+          <div class="flex items-center gap-3 flex-wrap">
+            <!-- 1. AI Recommendation Button -->
+            <button onclick="runRecommendationAgent()" id="btnRunAgent"
+              class="px-5 py-2.5 bg-gradient-to-r from-odoo-teal to-[#008481] hover:from-odoo-teal-dark hover:to-[#00706e] text-white font-semibold rounded-xl text-xs flex items-center gap-2 shadow-xs hover:shadow transition cursor-pointer">
+              <i class="fa-solid fa-wand-magic-sparkles text-xs" id="agentBtnIcon"></i>
+              <span id="agentBtnText">Run SprintMatch AI Recommendation</span>
+            </button>
+
+
+          </div>
+
+          <!-- Reset / Clear Button -->
+          <button onclick="resetTaskForm()"
+            class="px-4 py-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white text-xs font-medium transition flex items-center gap-1.5 cursor-pointer">
+            <i class="fa-solid fa-rotate-left text-xs"></i>
+            <span>Clear Form</span>
+          </button>
+        </div>
+      </article>
+
+      <!-- ACTIVE ASSIGNMENT STATUS BANNER (DYNAMIC - HIDDEN INITIALLY) -->
+      <div id="assignmentStatusBanner"
+        class="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-between gap-4 hidden shadow-xs">
+        <div class="flex items-center gap-3.5">
+          <div
+            class="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-2xs">
+            <i class="fa-solid fa-check"></i>
+          </div>
+          <div>
+            <span class="text-[10px] text-emerald-700 dark:text-emerald-300 font-bold uppercase tracking-wider">Current
+              Task Assignee</span>
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white" id="assignedDevName"></h4>
+            <p class="text-xs text-slate-500 dark:text-slate-400" id="assignedDevSub"></p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="switchMainView('kanban')"
+            class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-2xs transition flex items-center gap-1.5">
+            <i class="fa-solid fa-table-columns text-xs"></i>
+            <span>View on Scrum Board</span>
+          </button>
+          <button onclick="openManualAssignModal()"
+            class="px-3.5 py-1.5 bg-white dark:bg-surface-100 hover:bg-slate-50 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10 rounded-lg text-xs font-semibold shadow-2xs transition">
+            Change Assignee
+          </button>
+          <button onclick="unassignCurrentDeveloper()"
+            class="px-3 py-1.5 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg text-xs font-medium transition">
+            Unassign
+          </button>
+        </div>
+      </div>
+
+      <!-- ================= AWAITING RECOMMENDATION INITIAL STATE (NO EMPLOYEE DISPLAYED) ================= -->
+      <div id="awaitingRecommendationState"
+        class="p-8 sm:p-12 text-center rounded-2xl border-2 border-dashed border-slate-200 dark:border-white/10 bg-white/60 dark:bg-surface-50/20 shadow-2xs space-y-4">
+        <div
+          class="w-16 h-16 mx-auto rounded-2xl bg-odoo-primary/10 text-odoo-primary dark:text-pink-300 flex items-center justify-center text-2xl shadow-inner">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+        </div>
+        <div class="max-w-md mx-auto space-y-1.5">
+          <h3 class="text-base font-bold text-slate-800 dark:text-slate-100">AI Task Matching Engine Ready</h3>
+          <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+            Select a template or enter your task title & description above, then click <strong
+              class="text-odoo-primary dark:text-pink-400">"Find Best Match with AI"</strong> to run autonomous
+            candidate matching across all 6 engineering departments.
+          </p>
+        </div>
+        <div class="flex items-center justify-center gap-2 text-[11px] text-slate-400 pt-1 flex-wrap">
+          <span class="inline-flex items-center gap-1"><i class="fa-solid fa-check text-emerald-500"></i> Skill
+            Verification</span>
+          <span>·</span>
+          <span class="inline-flex items-center gap-1"><i class="fa-solid fa-check text-emerald-500"></i> Real-time
+            Capacity</span>
+          <span>·</span>
+          <span class="inline-flex items-center gap-1"><i class="fa-solid fa-check text-emerald-500"></i> Live Agent
+            Reasoning</span>
+        </div>
+      </div>
+      <!-- ================= AI AGENT LIVE THINKING CONSOLE (CHATGPT / GEMINI STYLE) ================= -->
+      <div id="agentThinkingContainer" class="hidden transition-all duration-300">
+        <div
+          class="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50/90 dark:bg-surface-100/70 backdrop-blur-md p-4 sm:p-5 shadow-xs space-y-3.5">
+
+          <!-- Thinking Header Bar (ChatGPT-style Collapsible Toggle) -->
+          <div class="flex items-center justify-between text-left select-none">
+            <div class="flex items-center gap-3">
+              <div id="thinkingStatusIcon"
+                class="w-7 h-7 rounded-lg bg-odoo-primary/10 dark:bg-pink-500/10 text-odoo-primary dark:text-pink-300 flex items-center justify-center text-xs transition-colors shrink-0">
+                <i class="fa-solid fa-sparkles animate-pulse" id="thinkingIconInner"></i>
+              </div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span id="thinkingHeaderLabel"
+                  class="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-100 transition-colors">
+                  Thinking...
+                </span>
+                <span id="thinkingSecondsBadge"
+                  class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-slate-200/70 dark:bg-white/10 text-slate-500 dark:text-slate-400 font-medium">
+                  0.0s
+                </span>
+                <span id="thinkingActiveStepBadge"
+                  class="text-[11px] font-medium px-2 py-0.5 rounded-full bg-odoo-primary/10 text-odoo-primary dark:text-pink-300 border border-odoo-primary/20">
+                  Step 1 of 5
+                </span>
+              </div>
+            </div>
+            <button type="button" id="chatGptThinkingToggle" onclick="toggleThinkingDetails()"
+              class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-surface-200/50 transition-colors cursor-pointer text-xs">
+              <span class="text-[11px] font-medium tracking-wide uppercase" id="thinkingToggleStateText">Details</span>
+              <i id="thinkingChevron"
+                class="fa-solid fa-chevron-down text-[10px] transition-transform duration-200"></i>
+            </button>
+          </div>
+
+          <!-- Mini Step Progress Bar -->
+          <div id="thinkingProgressBarContainer"
+            class="w-full bg-slate-200/70 dark:bg-white/10 rounded-full h-1 overflow-hidden">
+            <div id="thinkingProgressBar" class="bg-emerald-500 h-full transition-all duration-500 ease-out"
+              style="width: 20%;"></div>
+          </div>
+
+          <!-- ACTIVE STEP SPOTLIGHT HERO CARD ("زي GPT كده - يظهر ويختفي step by step") -->
+          <div id="thinkingActiveStepCard"
+            class="relative overflow-hidden rounded-xl bg-white dark:bg-surface-50 border border-slate-200/80 dark:border-white/10 p-4 shadow-2xs transition-all duration-300">
+            <div class="flex items-start gap-3.5">
+              <div id="activeStepIconBox"
+                class="w-9 h-9 rounded-xl bg-odoo-primary/10 dark:bg-pink-500/15 text-odoo-primary dark:text-pink-300 flex items-center justify-center text-sm shrink-0 mt-0.5 shadow-2xs">
+                <i id="activeStepIcon" class="fa-solid fa-compass fa-spin"></i>
+              </div>
+              <div class="flex-1 min-w-0 space-y-1">
+                <div class="flex items-center justify-between gap-2">
+                  <h4 id="activeStepTitle"
+                    class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white transition-opacity duration-200">
+                    Deconstructing task requirements & target tech stack...
+                  </h4>
+                  <span id="activeStepStatusPill"
+                    class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold shrink-0 animate-pulse border border-amber-500/20">
+                    Processing
+                  </span>
+                </div>
+                <p id="activeStepDescription"
+                  class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed transition-opacity duration-200">
+                  Parsing task requirements to extract core technical competencies, complexity rating, and allocated
+                  sprint budget...
+                </p>
+                <div id="activeStepExtras" class="pt-1.5 flex items-center gap-1.5 flex-wrap"></div>
+              </div>
+            </div>
+            <!-- Bottom subtle animated pulse bar -->
+            <div id="activeStepPulseGlow"
+              class="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-odoo-primary to-transparent animate-pulse">
+            </div>
+          </div>
+
+          <!-- COMPLETED STEPS TIMELINE LOG / REASONING STREAM (EXPANDABLE) -->
+          <div id="chatGptThinkingBody"
+            class="hidden mt-2 pt-3 pl-3.5 border-l-2 border-slate-200 dark:border-white/10 space-y-3.5 text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-sans transition-all duration-300">
+
+            <!-- Step 1 in Timeline -->
+            <div id="thoughtItem1" class="hidden space-y-1.5 transition-all duration-300">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 font-medium text-slate-800 dark:text-slate-200">
+                  <span id="thoughtCheck1"
+                    class="w-4 h-4 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-[10px] shrink-0 border border-emerald-500/20">
+                    <i class="fa-solid fa-check"></i>
+                  </span>
+                  <span id="thoughtTitle1" class="font-semibold text-xs">Task Decomposition & Competency
+                    Extraction</span>
+                </div>
+                <span id="thoughtTime1" class="text-[10px] font-mono text-slate-400">0.8s</span>
+              </div>
+              <p class="text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed pl-6" id="thoughtItem1Details">
+                Deconstructed specifications and extracted required engineering competencies.
+              </p>
+              <div id="thoughtExtractedSkillsPills" class="flex items-center gap-1.5 flex-wrap pt-0.5 pl-6"></div>
+            </div>
+
+            <!-- Step 2 in Timeline -->
+            <div id="thoughtItem2" class="hidden space-y-1.5 transition-all duration-300">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 font-medium text-slate-800 dark:text-slate-200">
+                  <span id="thoughtCheck2"
+                    class="w-4 h-4 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-[10px] shrink-0 border border-emerald-500/20">
+                    <i class="fa-solid fa-check"></i>
+                  </span>
+                  <span id="thoughtTitle2" class="font-semibold text-xs">Engineering Roster & Skills Screening</span>
+                </div>
+                <span id="thoughtTime2" class="text-[10px] font-mono text-slate-400">1.6s</span>
+              </div>
+              <p class="text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed pl-6" id="thoughtItem2Details">
+                Filtered active engineers across departments against verified skill catalog.
+              </p>
+            </div>
+
+            <!-- Step 3 in Timeline -->
+            <div id="thoughtItem3" class="hidden space-y-1.5 transition-all duration-300">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 font-medium text-slate-800 dark:text-slate-200">
+                  <span id="thoughtCheck3"
+                    class="w-4 h-4 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-[10px] shrink-0 border border-emerald-500/20">
+                    <i class="fa-solid fa-check"></i>
+                  </span>
+                  <span id="thoughtTitle3" class="font-semibold text-xs">Sprint Capacity & Work Schedule
+                    Verification</span>
+                </div>
+                <span id="thoughtTime3" class="text-[10px] font-mono text-slate-400">2.4s</span>
+              </div>
+              <p class="text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed pl-6" id="thoughtItem3Details">
+                Verified sprint capacity windows in Africa/Cairo timezone without risking developer burnout.
+              </p>
+            </div>
+
+            <!-- Step 4 in Timeline -->
+            <div id="thoughtItem4" class="hidden space-y-1.5 transition-all duration-300">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 font-medium text-slate-800 dark:text-slate-200">
+                  <span id="thoughtCheck4"
+                    class="w-4 h-4 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-[10px] shrink-0 border border-emerald-500/20">
+                    <i class="fa-solid fa-check"></i>
+                  </span>
+                  <span id="thoughtTitle4" class="font-semibold text-xs">Multi-Objective Trade-Offs & Multi-Factor
+                    Ranking</span>
+                </div>
+                <span id="thoughtTime4" class="text-[10px] font-mono text-slate-400">3.2s</span>
+              </div>
+              <p class="text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed pl-6" id="thoughtItem4Details">
+                Computed multi-factor optimization: skill match, experience, quality, capacity & workload balance.
+              </p>
+            </div>
+
+            <!-- Step 5 in Timeline: Synthesized Decision Memo & Rationale -->
+            <div id="thoughtItem5"
+              class="hidden space-y-2 pt-2 border-t border-slate-200/60 dark:border-white/5 transition-all duration-300">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2 font-medium text-slate-800 dark:text-slate-200">
+                  <span id="thoughtCheck5"
+                    class="w-4 h-4 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-[10px] shrink-0 border border-emerald-500/20">
+                    <i class="fa-solid fa-check"></i>
+                  </span>
+                  <span id="thoughtTitle5" class="font-semibold text-xs">Decision Rationale & Recommendation Memo</span>
+                </div>
+                <span id="thoughtTime5" class="text-[10px] font-mono text-slate-400">Complete</span>
+              </div>
+              <div id="thoughtExplanationText"
+                class="p-3.5 rounded-xl bg-white/90 dark:bg-surface-0/90 border border-slate-200/80 dark:border-white/10 text-slate-700 dark:text-slate-200 italic font-sans leading-relaxed text-xs shadow-2xs">
+                Synthesizing recommendation rationale...
+              </div>
+            </div>
+
+            <!-- Subtle LangGraph Execution Footprint / Latencies -->
+            <div id="thoughtGraphTraceFooter"
+              class="pt-2 flex items-center justify-between text-[10px] font-mono text-slate-400 dark:text-slate-500 flex-wrap gap-2 border-t border-slate-200/60 dark:border-white/5">
+              <div class="flex items-center gap-1.5">
+                <i class="fa-solid fa-diagram-project text-odoo-primary"></i>
+                <span id="thoughtGraphTraceStats">LangGraph Multi-Agent Trace</span>
+              </div>
+              <div id="thoughtGraphNodesBadges" class="flex items-center gap-1 flex-wrap"></div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= CARD 2: RECOMMENDATION & MATCHING RESULTS (HIDDEN INITIALLY) ================= -->
+      <div id="recommendationResultsSection" class="space-y-6 hidden">
+
+        <!-- Result Status Banner -->
+        <div
+          class="flex items-center justify-between p-4 rounded-xl bg-white dark:bg-surface-50 border border-slate-200 dark:border-white/10 shadow-xs">
+          <div class="flex items-center gap-3">
+            <span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" id="resultStatusDot"></span>
+            <div>
+              <span class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider"
+                id="resultStatusHeading">AI Recommendation: Match Verified</span>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400" id="resultStatusSub">Evaluation completed with
+                deterministic 7-factor verification.</p>
+            </div>
+          </div>
+          <span
+            class="text-[11px] font-mono font-semibold px-2.5 py-1 rounded-md bg-slate-100 dark:bg-surface-100 text-slate-600 dark:text-slate-300"
+            id="resultAlgorithmBadge">v1.1.0 · #VERIFIED</span>
+        </div>
+
+        <!-- Primary Candidate Hero Card -->
+        <div id="primaryCandidateCard"
+          class="bg-gradient-to-r from-odoo-primary-tint/70 via-white to-odoo-teal-light/40 dark:from-surface-100 dark:to-surface-50 border border-odoo-primary/20 dark:border-white/10 rounded-2xl p-6 sm:p-8 relative overflow-hidden shadow-sm">
+          <div
+            class="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-200 dark:border-white/10">
+            <div class="flex items-center gap-5">
+              <div id="heroAvatar"
+                class="w-18 h-18 rounded-2xl bg-odoo-primary text-white flex items-center justify-center font-bold text-2xl shadow-md border-2 border-white dark:border-surface-200">
+                AH
+              </div>
+              <div>
+                <div class="flex items-center gap-2.5">
+                  <h3 id="heroCandidateName" class="text-xl font-bold text-slate-900 dark:text-white"></h3>
+                  <span id="heroCandidateCode"
+                    class="text-xs font-mono px-2.5 py-0.5 rounded-md bg-odoo-primary/10 text-odoo-primary dark:text-pink-300 font-bold"></span>
+                </div>
+                <p id="heroCandidateTitle" class="text-xs text-slate-600 dark:text-slate-400 mt-1 font-medium"></p>
+
+                <!-- Quick Badges -->
+                <div class="flex items-center gap-2 mt-3 flex-wrap">
+                  <span id="heroBadgeStatus"
+                    class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-2.5 py-0.5 rounded-full">
+                    <i class="fa-solid fa-circle-check text-[10px]"></i>
+                    <span>Fully Available</span>
+                  </span>
+                  <span id="heroBadgeCapacity"
+                    class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-surface-200 border border-slate-200 dark:border-white/10 px-2.5 py-0.5 rounded-full font-mono">
+                    <i class="fa-regular fa-clock text-[10px]"></i>
+                    <span>31.0h Available Capacity</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Overall Score Gauge & Action Buttons -->
+            <div
+              class="flex items-center gap-4 bg-white dark:bg-surface-0 p-4 rounded-xl border border-slate-200 dark:border-white/10 shadow-xs self-start md:self-auto">
+              <div class="text-center px-2">
+                <div
+                  class="text-3xl sm:text-4xl font-extrabold text-odoo-primary dark:text-pink-400 font-mono tracking-tight"
+                  id="heroScoreValue">92.2%</div>
+                <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider mt-0.5">Deterministic Match
+                </div>
+              </div>
+              <div class="h-12 w-px bg-slate-200 dark:border-white/10"></div>
+              <div class="flex flex-col gap-2">
+                <button onclick="assignRecommendedEmployee()" id="btnAssignHero"
+                  class="px-4 py-2 bg-odoo-teal hover:bg-odoo-teal-dark text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center gap-1.5 cursor-pointer">
+                  <i class="fa-solid fa-user-check text-xs"></i>
+                  <span>Assign This Developer</span>
+                </button>
+                <button onclick="openPrimaryEmployee360()"
+                  class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-surface-100 dark:hover:bg-surface-200 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-medium transition flex items-center gap-1.5 cursor-pointer">
+                  <i class="fa-solid fa-address-card text-xs"></i>
+                  <span>360° Profile</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Multi-Factor Deterministic Breakdown Grid -->
+          <div class="pt-6">
+            <div class="flex items-center justify-between mb-3.5">
+              <h4
+                class="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                <i class="fa-solid fa-chart-simple text-odoo-teal"></i>
+                <span id="factorsGridHeading">Multi-Factor Deterministic Scoring Verification</span>
+              </h4>
+              <span class="text-[10px] text-slate-400 font-mono">Weighted Multi-Objective Optimization</span>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 text-center" id="factorCardsGrid">
+              <!-- Populated dynamically via JS -->
+            </div>
+          </div>
+
+          <!-- AI Rationale Explanation Box -->
+          <div
+            class="mt-6 p-5 rounded-xl bg-white dark:bg-surface-0 border border-slate-200 dark:border-white/10 space-y-2">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <i class="fa-solid fa-wand-magic-sparkles text-odoo-primary dark:text-pink-400"></i>
+                <span>Recommendation Rationale (Human-in-the-Loop Advisory)</span>
+              </span>
+              <button onclick="copyExplanation()"
+                class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-[11px] flex items-center gap-1 font-medium cursor-pointer">
+                <i class="fa-regular fa-copy"></i>
+                <span>Copy Explanation</span>
+              </button>
+            </div>
+            <p class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-sans" id="heroRationaleText">
+              Evaluating candidate evidence...
+            </p>
+          </div>
+        </div>
+
+        <!-- No Suitable Candidate Alert Card (Hidden by default) -->
+        <div id="noSuitableCandidateCard"
+          class="p-6 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 space-y-4 hidden">
+          <div class="flex items-center gap-3">
+            <div
+              class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-lg">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div>
+              <h4 class="text-sm font-bold text-slate-900 dark:text-white">No Suitable Candidate Satisfied All Hard
+                Constraints</h4>
+              <p class="text-xs text-slate-600 dark:text-slate-400" id="noCandidateReasonText">Mandatory skill
+                requirements or available capacity blocked automatic recommendation.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 pt-2">
+            <span class="text-xs text-slate-400">Please adjust estimated effort/deadline or refine the task description
+              in the form above.</span>
+          </div>
+        </div>
+
+        <!-- Ranked Alternatives Section -->
+        <div
+          class="o-sheet rounded-2xl p-6 space-y-4 shadow-sm border border-slate-200 dark:border-white/10 bg-white dark:bg-surface-50">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-users text-odoo-primary dark:text-pink-400"></i>
+              <h3 class="text-sm font-bold text-slate-900 dark:text-white">Ranked Alternative Candidates</h3>
+              <span id="altCountBadge"
+                class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-surface-100 text-slate-600 dark:text-slate-300 text-[10px] font-mono font-bold">0</span>
+            </div>
+            <span class="text-[11px] text-slate-400">Secondary options meeting eligibility criteria</span>
+          </div>
+          <div id="alternativesList" class="space-y-3">
+            <!-- Populated dynamically via JS -->
+          </div>
+        </div>
+
+        <!-- Excluded Candidates Analysis Section -->
+        <div
+          class="o-sheet rounded-2xl p-6 space-y-4 shadow-sm border border-slate-200 dark:border-white/10 bg-white dark:bg-surface-50">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-user-xmark text-rose-500"></i>
+              <h3 class="text-sm font-bold text-slate-900 dark:text-white">Transparent Excluded Candidates</h3>
+              <span id="exCountBadge"
+                class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 text-[10px] font-mono font-bold">0</span>
+            </div>
+            <input type="text" id="excludedSearch" oninput="filterExcludedCandidates()" placeholder="Filter excluded..."
+              class="bg-slate-50 dark:bg-surface-100 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-1.5 text-xs text-slate-700 dark:text-slate-200 w-48 focus:outline-none focus:border-odoo-primary">
+          </div>
+          <div id="excludedList" class="space-y-2 max-h-96 overflow-y-auto pr-1">
+            <!-- Populated dynamically via JS -->
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ================= VIEW MODE D: DATABASE & WORKFORCE STUDIO ================= -->
+    <div id="viewEmployeesContainer" class="hidden space-y-6">
+
+      <!-- Studio Header -->
+      <div
+        class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-white/10">
+        <div>
+          <h2 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
+            <span
+              class="w-8 h-8 rounded-lg bg-odoo-teal/10 text-odoo-teal flex items-center justify-center text-sm font-bold shadow-2xs">
+              <i class="fa-solid fa-database"></i>
+            </span>
+            <span>Database Inspector & Schema Explorer</span>
+          </h2>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Live PostgreSQL Data Explorer: Inspect database tables,
+            explore schema and records, and connect to any database.</p>
+        </div>
+
+        <!-- Connect Database Action -->
+        <div class="flex items-center gap-3">
+          <button onclick="loadDatabaseTables()"
+            class="px-3.5 py-2 bg-white dark:bg-surface-100 hover:bg-slate-100 dark:hover:bg-surface-200 text-slate-700 dark:text-slate-200 rounded-xl border border-slate-200 dark:border-white/10 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            title="Refresh Tables and Schema">
+            <i class="fa-solid fa-rotate text-xs text-odoo-primary"></i>
+            <span>Refresh Schema</span>
+          </button>
+          <button onclick="openDatabaseModal()"
+            class="px-4 py-2 bg-gradient-to-r from-odoo-primary to-[#55384D] hover:opacity-95 text-white rounded-xl text-xs font-semibold shadow-xs flex items-center gap-2 transition cursor-pointer"
+            title="Connect to any PostgreSQL database">
+            <i class="fa-solid fa-plug text-xs text-odoo-teal"></i>
+            <span>Connect DB</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ================= FULL DATABASE & TABLES INSPECTOR ================= -->
+      <div id="databaseInspectorSection" class="space-y-5">
+
+        <!-- Live Active Database Summary Banner -->
+        <div
+          class="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-surface-100/60 p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xs">
+          <div class="flex items-center gap-3.5">
+            <div
+              class="w-11 h-11 rounded-2xl bg-odoo-teal/10 text-odoo-teal flex items-center justify-center text-lg font-bold shadow-2xs">
+              <i class="fa-solid fa-server"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="text-sm font-bold text-slate-900 dark:text-white" id="inspectorActiveDbTitle">Connected
+                  Database: sprintmatch</span>
+                <span
+                  class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-semibold"
+                  id="inspectorPingBadge">1.2ms</span>
+              </div>
+              <p class="text-xs text-slate-500 font-mono mt-0.5" id="inspectorDbUriDisplay">
+                postgresql+psycopg://sprintmatch:••••••••@localhost:55432/sprintmatch</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 text-xs">
+              <span
+                class="px-3 py-1 rounded-lg bg-white dark:bg-surface-200 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 font-mono font-semibold"
+                id="inspectorTablesCountBadge">34 Tables</span>
+              <span
+                class="px-3 py-1 rounded-lg bg-white dark:bg-surface-200 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 font-mono font-semibold"
+                id="inspectorRecordsCountBadge">~50k+ Rows</span>
+            </div>
+            <button onclick="loadDatabaseTables()"
+              class="p-2 px-3 bg-white dark:bg-surface-200 hover:bg-slate-100 dark:hover:bg-surface-300 text-slate-700 dark:text-slate-200 rounded-lg border border-slate-200 dark:border-white/10 text-xs transition cursor-pointer"
+              title="Refresh Tables and Schema">
+              <i class="fa-solid fa-rotate"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Inspector Split-View Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+          <!-- Left Column: Tables Catalog (4 cols) -->
+          <div class="lg:col-span-4 space-y-3">
+            <div class="o-sheet rounded-2xl p-4 space-y-3 border border-slate-200 dark:border-white/10 shadow-xs">
+
+              <!-- Tables Search & Header -->
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <i class="fa-solid fa-layer-group text-odoo-primary"></i>
+                  <span>Database Tables (<span id="inspectorFilteredTablesCount">0</span>)</span>
+                </span>
+                <span class="text-[10px] text-slate-400">Click to inspect</span>
+              </div>
+
+              <!-- Search Box -->
+              <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                <input type="text" id="inspectorTableSearch" oninput="filterInspectorTables()"
+                  placeholder="Search tables (e.g. employee, task)..."
+                  class="w-full bg-slate-50 dark:bg-surface-100 border border-slate-200 dark:border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-odoo-primary">
+              </div>
+
+              <!-- Category Filter Chips (Dynamically Generated from Database Schema) -->
+              <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px]" id="inspectorCategoryPills">
+                <button type="button" onclick="filterInspectorByCat('ALL')"
+                  class="inspector-cat-btn px-2.5 py-1 rounded-md bg-odoo-primary text-white font-semibold transition shrink-0"
+                  data-cat="ALL">
+                  All
+                </button>
+              </div>
+
+              <!-- Tables List Scroll Container -->
+              <div id="inspectorTablesList" class="space-y-1.5 max-h-[600px] overflow-y-auto pr-1">
+                <!-- Dynamically populated table cards -->
+                <div class="p-8 text-center text-slate-400 text-xs">Loading database schema...</div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Right Column: Table Inspector & Data Browser (8 cols) -->
+          <div class="lg:col-span-8 space-y-4">
+            <div class="o-sheet rounded-2xl p-5 space-y-4 border border-slate-200 dark:border-white/10 shadow-xs">
+
+              <!-- Table Header & Controls -->
+              <div
+                class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-white/10">
+                <div>
+                  <div class="flex items-center gap-2.5">
+                    <span
+                      class="w-8 h-8 rounded-lg bg-odoo-primary/10 text-odoo-primary dark:text-pink-400 flex items-center justify-center text-xs font-bold font-mono">
+                      <i class="fa-solid fa-table"></i>
+                    </span>
+                    <div>
+                      <h4 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <span id="activeTableTitle">employees</span>
+                        <span id="activeTableCategoryBadge"
+                          class="text-[10px] px-2 py-0.2 rounded-full bg-slate-100 dark:bg-surface-200 text-slate-600 dark:text-slate-400 font-normal">Schema
+                          Table</span>
+                      </h4>
+                      <p class="text-xs text-slate-500 font-mono" id="activeTableStatsSubtitle">58 Total Rows · 14
+                        Columns · Primary Key: id</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Controls & Export -->
+                <div class="flex items-center gap-2 flex-wrap">
+                  <!-- Sub-tabs: Data vs Schema -->
+                  <div
+                    class="flex items-center bg-slate-100 dark:bg-surface-100 p-1 rounded-lg border border-slate-200 dark:border-white/10 text-xs">
+                    <button type="button" onclick="switchInspectorTableSubTab('data')" id="btnInspectorSubData"
+                      class="px-3 py-1 rounded-md bg-white dark:bg-surface-200 text-odoo-primary dark:text-white font-semibold shadow-2xs transition flex items-center gap-1.5 cursor-pointer">
+                      <i class="fa-solid fa-table-list text-xs"></i>
+                      <span>Data Records</span>
+                    </button>
+                    <button type="button" onclick="switchInspectorTableSubTab('schema')" id="btnInspectorSubSchema"
+                      class="px-3 py-1 rounded-md text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition flex items-center gap-1.5 font-medium cursor-pointer">
+                      <i class="fa-solid fa-diagram-project text-xs"></i>
+                      <span>Schema & Columns</span>
+                    </button>
+                  </div>
+
+                  <!-- Download Buttons -->
+                  <button type="button" onclick="exportInspectedTableCSV()"
+                    class="px-2.5 py-1.5 bg-white dark:bg-surface-100 hover:bg-slate-100 text-slate-700 dark:text-slate-200 rounded-lg border border-slate-200 dark:border-white/10 text-xs transition flex items-center gap-1 cursor-pointer"
+                    title="Export Table as CSV">
+                    <i class="fa-solid fa-file-csv text-emerald-600"></i>
+                    <span>CSV</span>
+                  </button>
+                  <button type="button" onclick="exportInspectedTableJSON()"
+                    class="px-2.5 py-1.5 bg-white dark:bg-surface-100 hover:bg-slate-100 text-slate-700 dark:text-slate-200 rounded-lg border border-slate-200 dark:border-white/10 text-xs transition flex items-center gap-1 cursor-pointer"
+                    title="Export Table as JSON">
+                    <i class="fa-solid fa-file-code text-amber-500"></i>
+                    <span>JSON</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Search rows input (visible in Data mode) -->
+              <div id="inspectorRowSearchWrapper" class="flex items-center justify-between gap-3">
+                <div class="relative flex-1 max-w-sm">
+                  <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                  <input type="text" id="inspectorRowSearchInput"
+                    onkeydown="if(event.key==='Enter') searchInspectorRows()"
+                    placeholder="Search in records... (Press Enter)"
+                    class="w-full bg-slate-50 dark:bg-surface-100 border border-slate-200 dark:border-white/10 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:border-odoo-primary">
+                </div>
+                <div class="flex items-center gap-2 text-xs text-slate-400">
+                  <span id="inspectorPaginationLabel">Showing 1 - 50</span>
+                  <div class="flex items-center gap-1">
+                    <button type="button" onclick="changeInspectorPage(-1)" id="btnInspectorPrev"
+                      class="w-7 h-7 rounded-lg border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-surface-200 flex items-center justify-center text-xs disabled:opacity-40 cursor-pointer">
+                      <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <button type="button" onclick="changeInspectorPage(1)" id="btnInspectorNext"
+                      class="w-7 h-7 rounded-lg border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-surface-200 flex items-center justify-center text-xs disabled:opacity-40 cursor-pointer">
+                      <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sub-tab View 1: Data Records Grid -->
+              <div id="inspectorDataGridWrapper"
+                class="overflow-x-auto max-h-[520px] rounded-xl border border-slate-200 dark:border-white/10">
+                <table class="w-full text-left text-xs whitespace-nowrap">
+                  <thead
+                    class="bg-slate-50 dark:bg-surface-100 text-slate-600 dark:text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-200 dark:border-white/10 sticky top-0 z-10"
+                    id="inspectorDataTableHead">
+                    <!-- Dynamic column headers -->
+                  </thead>
+                  <tbody id="inspectorDataTableBody"
+                    class="divide-y divide-slate-200 dark:divide-white/10 font-mono text-[11px]">
+                    <!-- Dynamic rows -->
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Sub-tab View 2: Schema & Columns Grid -->
+              <div id="inspectorSchemaWrapper"
+                class="hidden overflow-x-auto max-h-[520px] rounded-xl border border-slate-200 dark:border-white/10">
+                <table class="w-full text-left text-xs">
+                  <thead
+                    class="bg-slate-50 dark:bg-surface-100 text-slate-600 dark:text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-200 dark:border-white/10 sticky top-0 z-10">
+                    <tr>
+                      <th class="px-4 py-3">Column Name</th>
+                      <th class="px-4 py-3">SQL Type</th>
+                      <th class="px-4 py-3">Key Constraints</th>
+                      <th class="px-4 py-3">Nullable</th>
+                      <th class="px-4 py-3">Default Value</th>
+                    </tr>
+                  </thead>
+                  <tbody id="inspectorSchemaTableBody" class="divide-y divide-slate-200 dark:divide-white/10 text-xs">
+                    <!-- Dynamic schema rows -->
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- ================= 5. EMPLOYEE 360 SLIDE-OVER DRAWER ================= -->
+    <div id="drawerBackdrop" onclick="closeEmployee360Modal()"
+      class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 hidden transition-opacity"></div>
+    <aside id="employee360Drawer"
+      class="fixed inset-y-0 right-0 w-full max-w-2xl bg-white dark:bg-surface-50 border-l border-slate-200 dark:border-white/10 shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+      <!-- Drawer Header -->
+      <div
+        class="px-6 py-4 border-b border-slate-200 dark:border-white/10 flex items-center justify-between bg-odoo-primary dark:bg-surface-100 text-white">
+        <div class="flex items-center gap-3">
+          <div id="drawerAvatar"
+            class="w-11 h-11 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center font-bold text-sm font-mono shadow-xs">
+            AH
+          </div>
+          <div>
+            <h3 id="drawerName" class="font-bold text-base leading-tight">Employee Profile</h3>
+            <p id="drawerRole" class="text-xs text-white/80 font-medium">Senior Backend Engineer · Core Engineering</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="drawerEditBtn" onclick="openEditEmployeeModal(currentDrawerEmployeeId)"
+            class="px-2.5 py-1 bg-white/15 hover:bg-white/25 text-white rounded text-xs font-semibold transition flex items-center gap-1"
+            title="Edit Employee">
+            <i class="fa-solid fa-pen-to-square text-xs"></i>
+            <span>Edit</span>
+          </button>
+          <button onclick="closeEmployee360Modal()"
+            class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/80 hover:text-white transition">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Drawer Content Body -->
+      <div id="drawerBody" class="flex-1 overflow-y-auto p-6 space-y-6">
+        <div class="text-center py-12 text-slate-400 text-xs">
+          Loading authoritative 360 profile from Odoo HR...
+        </div>
+      </div>
+    </aside>
+
+    <!-- ================= 6. EDIT EMPLOYEE MODAL (DATABASE UPDATE) ================= -->
+    <div id="editEmployeeModal"
+      class="fixed inset-0 bg-black/70 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+      <div
+        class="o-sheet rounded-2xl max-w-lg w-full p-6 sm:p-8 space-y-5 shadow-2xl border border-slate-200 dark:border-white/10">
+
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
+          <div class="flex items-center gap-2.5">
+            <div
+              class="w-8 h-8 rounded-lg bg-odoo-primary text-white flex items-center justify-center text-sm shadow-xs">
+              <i class="fa-solid fa-user-pen"></i>
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-slate-900 dark:text-white">Edit Employee Profile</h3>
+              <p class="text-xs text-slate-500">Update employee records directly in the PostgreSQL database.</p>
+            </div>
+          </div>
+          <button onclick="toggleModal('editEmployeeModal')"
+            class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+
+        <!-- Hidden Employee ID Input -->
+        <input type="hidden" id="editEmployeeId">
+
+        <div class="space-y-4 text-xs">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Employee Code & Department
+            </label>
+            <div class="flex items-center gap-3">
+              <span id="editEmpCodeDisplay"
+                class="font-mono font-bold text-odoo-primary dark:text-pink-400 bg-odoo-primary/10 px-2.5 py-1 rounded">EMP-001</span>
+              <span id="editEmpDeptDisplay" class="text-slate-500 font-medium">Backend Engineering</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Full Name <span class="text-rose-500">*</span>
+            </label>
+            <input type="text" id="editEmpFullName"
+              class="w-full bg-slate-50 dark:bg-surface-100 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-odoo-primary">
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Job Title <span class="text-rose-500">*</span>
+            </label>
+            <input type="text" id="editEmpJobTitle"
+              class="w-full bg-slate-50 dark:bg-surface-100 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-odoo-primary">
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Experience (Years)
+              </label>
+              <input type="number" id="editEmpExperience" step="0.5" min="0" max="40"
+                class="w-full bg-slate-50 dark:bg-surface-100 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-odoo-primary">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Employment Status
+              </label>
+              <select id="editEmpStatus"
+                class="w-full bg-slate-50 dark:bg-surface-100 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-odoo-primary">
+                <option value="ACTIVE">ACTIVE (Working)</option>
+                <option value="ON_LEAVE">ON LEAVE (Vacation)</option>
+                <option value="INACTIVE">INACTIVE</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+              Work Email Address
+            </label>
+            <input type="email" id="editEmpEmail"
+              class="w-full bg-slate-50 dark:bg-surface-100 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-odoo-primary">
+          </div>
+        </div>
+
+        <!-- Modal Actions -->
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-white/10">
+          <button type="button" onclick="toggleModal('editEmployeeModal')"
+            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-surface-100 dark:hover:bg-surface-200 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-medium transition">
+            Cancel
+          </button>
+          <button type="button" onclick="saveEmployeeEdits()" id="btnSaveEmployee"
+            class="px-5 py-2 bg-odoo-primary hover:bg-odoo-primary-dark text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center gap-1.5">
+            <i class="fa-solid fa-floppy-disk text-xs"></i>
+            <span>Save Changes to Database</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ================= 8. DATABASE CONNECTION MODAL ================= -->
+    <div id="databaseConnectionModal"
+      class="fixed inset-0 bg-black/70 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+      <div
+        class="o-sheet rounded-2xl max-w-2xl w-full p-6 sm:p-7 space-y-5 shadow-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-surface-50 max-h-[92vh] overflow-y-auto">
+
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
+          <div class="flex items-center gap-3">
+            <div
+              class="w-9 h-9 rounded-xl bg-odoo-primary/10 text-odoo-primary dark:text-pink-400 flex items-center justify-center text-base font-bold shadow-2xs">
+              <i class="fa-solid fa-database"></i>
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-slate-900 dark:text-white">Database Connection Manager</h3>
+              <p class="text-xs text-slate-500">Connect SprintMatch AI to any local or cloud PostgreSQL database
+                instance.</p>
+            </div>
+          </div>
+          <button onclick="toggleModal('databaseConnectionModal')"
+            class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+
+        <!-- Card 1: Active Connection Status -->
+        <div
+          class="rounded-xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/70 dark:bg-emerald-950/30 p-4 space-y-2">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span class="text-xs font-bold text-emerald-900 dark:text-emerald-300">Active Connection Status:
+                CONNECTED</span>
+            </div>
+            <span id="activeDbLatencyBadge"
+              class="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-200/60 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 font-semibold">Ping:
+              ~1.2ms</span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs">
+            <div
+              class="bg-white/60 dark:bg-surface-100/60 p-2 rounded-lg border border-emerald-100 dark:border-white/5">
+              <span class="text-[10px] text-slate-500 block">Dialect</span>
+              <span id="activeDbDialect"
+                class="font-bold text-slate-800 dark:text-slate-100 font-mono">PostgreSQL</span>
+            </div>
+            <div
+              class="bg-white/60 dark:bg-surface-100/60 p-2 rounded-lg border border-emerald-100 dark:border-white/5">
+              <span class="text-[10px] text-slate-500 block">Database</span>
+              <span id="activeDbName" class="font-bold text-slate-800 dark:text-slate-100 font-mono">sprintmatch</span>
+            </div>
+            <div
+              class="bg-white/60 dark:bg-surface-100/60 p-2 rounded-lg border border-emerald-100 dark:border-white/5">
+              <span class="text-[10px] text-slate-500 block">Host & Port</span>
+              <span id="activeDbHostPort"
+                class="font-bold text-slate-800 dark:text-slate-100 font-mono">localhost:55432</span>
+            </div>
+            <div
+              class="bg-white/60 dark:bg-surface-100/60 p-2 rounded-lg border border-emerald-100 dark:border-white/5">
+              <span class="text-[10px] text-slate-500 block">Records Loaded</span>
+              <span id="activeDbRecords" class="font-bold text-slate-800 dark:text-slate-100 font-mono">58 Devs</span>
+            </div>
+          </div>
+          <div class="pt-1">
+            <span class="text-[10px] text-slate-500 block">Connection URI:</span>
+            <span id="activeDbMaskedUrl"
+              class="font-mono text-[11px] text-slate-700 dark:text-slate-300 break-all bg-white/40 dark:bg-surface-200/40 px-2 py-0.5 rounded block">postgresql+psycopg://sprintmatch:••••••••@localhost:55432/sprintmatch</span>
+          </div>
+        </div>
+
+        <!-- Card 2: Quick Presets Bar -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-bold text-slate-700 dark:text-slate-300">Quick Configuration Presets:</label>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <button type="button" onclick="selectDbPreset('local_55432')"
+              class="db-preset-btn p-2 rounded-lg border border-slate-200 dark:border-white/10 hover:border-odoo-primary text-left transition text-xs space-y-0.5 bg-slate-50 dark:bg-surface-100">
+              <div class="font-bold text-slate-800 dark:text-slate-200">Local PostgreSQL</div>
+              <div class="text-[10px] text-slate-400 font-mono">Port 55432 (Default)</div>
+            </button>
+            <button type="button" onclick="selectDbPreset('standard_5432')"
+              class="db-preset-btn p-2 rounded-lg border border-slate-200 dark:border-white/10 hover:border-odoo-primary text-left transition text-xs space-y-0.5 bg-slate-50 dark:bg-surface-100">
+              <div class="font-bold text-slate-800 dark:text-slate-200">Standard PostgreSQL</div>
+              <div class="text-[10px] text-slate-400 font-mono">Port 5432 (System)</div>
+            </button>
+            <button type="button" onclick="selectDbPreset('custom_cloud')"
+              class="db-preset-btn p-2 rounded-lg border border-slate-200 dark:border-white/10 hover:border-odoo-primary text-left transition text-xs space-y-0.5 bg-slate-50 dark:bg-surface-100">
+              <div class="font-bold text-slate-800 dark:text-slate-200">Cloud / Remote DB</div>
+              <div class="text-[10px] text-slate-400 font-mono">Supabase / Neon / AWS</div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Card 3: Connection Configuration Tabs -->
+        <div class="space-y-3">
+          <!-- Input Mode Switcher -->
+          <div class="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-2">
+            <div class="flex items-center gap-2 text-xs">
+              <button type="button" id="btnDbModeUri" onclick="switchDbInputMode('uri')"
+                class="px-3 py-1 rounded-md bg-odoo-primary text-white font-semibold transition">
+                Connection URI
+              </button>
+              <button type="button" id="btnDbModeForm" onclick="switchDbInputMode('form')"
+                class="px-3 py-1 rounded-md text-slate-600 dark:text-slate-400 hover:text-slate-900 transition">
+                Individual Parameters
+              </button>
+            </div>
+            <span class="text-[11px] text-slate-400">PostgreSQL (psycopg) Supported</span>
+          </div>
+
+          <!-- Mode A: Connection URI Input -->
+          <div id="dbInputModeUri" class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+              Database Connection String (URI) <span class="text-rose-500">*</span>
+            </label>
+            <input type="text" id="inputDatabaseUrl"
+              placeholder="postgresql+psycopg://username:password@hostname:5432/dbname"
+              class="w-full bg-slate-50 dark:bg-surface-100 border border-slate-200 dark:border-white/10 rounded-lg p-2.5 font-mono text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-odoo-primary">
+            <p class="text-[11px] text-slate-400">Example: <code
+                class="font-mono text-odoo-primary dark:text-pink-300">postgresql+psycopg://sprintmatch:password@localhost:55432/sprintmatch</code>
+            </p>
+          </div>
+
+          <!-- Mode B: Individual Form Parameters -->
+          <div id="dbInputModeForm" class="hidden space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Host / Server</label>
+                <input type="text" id="inputDbHost" value="localhost"
+                  class="w-full bg-slate-50 dark:bg-surface-100 border border-slate-200 dark:border-white/10 rounded-lg p-2 text-xs font-mono">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Port</label>
+                <input type="number" id="inputDbPort" value="55432"
+                  class="w-full bg-slate-50 dark:bg-surface-100 border border-slate-200 dark:border-white/10 rounded-lg p-2 text-xs font-mono">
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div>
+                <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Database Name</label>
+                <input type="text" id="inputDbName" value="sprintmatch"
+                  class="w-full bg-slate-50 dark:bg-surface-100 border border-slate-200 dark:border-white/10 rounded-lg p-2 text-xs font-mono">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Username</label>
+                <input type="text" id="inputDbUser" value="sprintmatch"
+                  class="w-full bg-slate-50 dark:bg-surface-100 border border-slate-200 dark:border-white/10 rounded-lg p-2 text-xs font-mono">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 dark:text-slate-300 mb-1">Password</label>
+                <div class="relative">
+                  <input type="password" id="inputDbPassword" value="sprintmatch_dev_pw"
+                    class="w-full bg-slate-50 dark:bg-surface-100 border border-slate-200 dark:border-white/10 rounded-lg p-2 pr-8 text-xs font-mono">
+                  <button type="button" onclick="togglePasswordVisibility('inputDbPassword', 'dbEyeIcon')"
+                    class="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600">
+                    <i id="dbEyeIcon" class="fa-regular fa-eye text-xs"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Test Feedback Box -->
+        <div id="dbTestFeedbackBox" class="hidden rounded-xl p-3.5 text-xs transition-all space-y-1">
+          <!-- Injected dynamically -->
+        </div>
+
+        <!-- Modal Actions -->
+        <div class="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-white/10">
+          <button type="button" onclick="testDatabaseConnection()" id="btnTestDbConnection"
+            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-surface-100 dark:hover:bg-surface-200 text-slate-800 dark:text-slate-200 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
+            <i class="fa-solid fa-vial-circle-check text-xs text-odoo-teal"></i>
+            <span>Test Connection (اختبار الاتصال)</span>
+          </button>
+
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="toggleModal('databaseConnectionModal')"
+              class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-surface-100 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-medium transition cursor-pointer">
+              Cancel
+            </button>
+            <button type="button" onclick="applyDatabaseConnection()" id="btnApplyDbConnection"
+              class="px-5 py-2 bg-odoo-primary hover:bg-odoo-primary-dark text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center gap-1.5 cursor-pointer">
+              <i class="fa-solid fa-plug-circle-check text-xs"></i>
+              <span>Connect & Apply (اتصال وتطبيق)</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div id="settingsModal"
+      class="fixed inset-0 bg-black/70 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+      <div
+        class="o-sheet rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-200 dark:border-white/10">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
+          <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <i class="fa-solid fa-sliders text-odoo-primary"></i>
+            <span>Connection & Configuration</span>
+          </h3>
+          <button onclick="toggleModal('settingsModal')" class="text-slate-400 hover:text-slate-600">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+
+        <div class="space-y-3 text-xs">
+          <div>
+            <label class="block text-slate-600 dark:text-slate-400 font-medium mb-1">API Key (X-API-Key)</label>
+            <input type="password" id="configApiKey" value="dev-manager-key"
+              class="w-full bg-slate-50 dark:bg-surface-100 border border-slate-200 dark:border-white/10 rounded-lg p-2 font-mono text-slate-800 dark:text-slate-200">
+          </div>
+          <div>
+            <label class="block text-slate-600 dark:text-slate-400 font-medium mb-1">As-Of Execution Timestamp</label>
+            <input type="text" id="asOfInput" value="2026-11-03T10:00:00+02:00"
+              class="w-full bg-slate-50 dark:bg-surface-100 border border-slate-200 dark:border-white/10 rounded-lg p-2 font-mono text-slate-800 dark:text-slate-200">
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-white/10">
+          <button onclick="toggleModal('settingsModal')"
+            class="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium">Cancel</button>
+          <button onclick="saveSettings()"
+            class="px-3.5 py-1.5 bg-odoo-primary hover:bg-odoo-primary-dark text-white rounded-lg text-xs font-semibold">Save
+            & Reconnect</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- ================= JAVASCRIPT CONTROLLER ENGINE ================= -->
+  <!-- SprintMatch UI Modular Scripts -->
+  <script src="/ui/js/api.js"></script>
+  <script src="/ui/js/ui.js"></script>
+  <script src="/ui/js/agent.js"></script>
+  <script src="/ui/js/recommendations.js"></script>
+  <script src="/ui/js/database.js"></script>
+  <script src="/ui/js/init.js"></script>
+</body>
+
+</html>

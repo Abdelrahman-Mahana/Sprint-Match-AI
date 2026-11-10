@@ -40,6 +40,18 @@ class Settings(BaseSettings):
     database_pool_size: int = 5
     database_connect_timeout_seconds: int = 5
 
+    # --- Data-source adaptation ---------------------------------------------------------------
+    # auto: use the native schema when the database has it, otherwise discover and adapt to it.
+    database_adapter: Literal["auto", "native", "adaptive"] = "auto"
+    schema_mapping_path: str = "schema_mapping.json"
+    # Used when the connected source does not state a timezone / schedule of its own.
+    adaptive_default_timezone: str = "UTC"
+    adaptive_assume_default_schedule: bool = True
+    adaptive_default_daily_hours: float = Field(default=8.0, gt=0, le=16)
+    # Where the agent's own output (runs, audit, checkpoints) is stored. Defaults to database_url;
+    # set it when database_url points at an external system that must never receive agent writes.
+    internal_database_url: SecretStr | None = None
+
     # --- LLM provider (fully optional; the deterministic core never needs it) ----------------
     llm_provider: Literal["none", "mock", "openai_compatible", "ollama"] = "none"
     llm_base_url: str | None = None

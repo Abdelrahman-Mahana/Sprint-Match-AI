@@ -18,6 +18,7 @@ from app.domain.enums import RequirementSource, TaskCategory, TaskComplexity, Ta
 from app.domain.policies import ScoringConfig
 from app.infrastructure.llm.base import LLMError, LLMProvider, LLMUnavailableError
 from app.intelligence.prompts import task_analysis_messages
+from app.intelligence.task_analysis import text as text_norm
 from app.intelligence.task_analysis.injection import split_instruction_like
 
 logger = logging.getLogger(__name__)
@@ -47,29 +48,53 @@ class LLMTaskAnalysisOutput(BaseModel):
 
 
 def _term_pattern(term: str) -> re.Pattern[str]:
-    return re.compile(rf"(?<![A-Za-z0-9]){re.escape(term)}(?![A-Za-z0-9])", re.IGNORECASE)
+    return re.compile(rf"(?<![\w\u0600-\u06FF]){re.escape(term)}(?![\w\u0600-\u06FF])", re.IGNORECASE)
 
 
 class SkillCatalogIndex:
+    """Resolves catalog skills against free text: exact names/aliases first, then the fuzzy layer of
+    ``text.py`` (case/separator folding, common-English/Arabic hints, conservative typo matching)."""
+
     def __init__(self, catalog: list[Skill]) -> None:
         self.catalog = catalog
         self._by_term: dict[str, Skill] = {}
         for s in catalog:
             for term in (s.name, *s.aliases):
                 self._by_term[term.lower()] = s
+                for variant in text_norm.variants(term):
+                    self._by_term.setdefault(variant, s)
 
     def resolve(self, name: str) -> Skill | None:
-        return self._by_term.get(name.strip().lower())
+        exact = self._by_term.get(name.strip().lower())
+        if exact is not None:
+            return exact
+        for variant in text_norm.variants(name):
+            if variant in self._by_term:
+                return self._by_term[variant]
+        # Typo tolerance against real catalog names only (aliases are often short abbreviations).
+        for skill in self.catalog:
+            if text_norm.fuzzy_equals(text_norm.normalize(skill.name).replace(" ", ""),
+                                       text_norm.normalize(name).replace(" ", "")):
+                return skill
+        # Substring containment for compound or versioned skill names (e.g. Microservices vs Microservices Architecture)
+        norm_name = text_norm.normalize(name).replace(" ", "")
+        for skill in self.catalog:
+            norm_skill = text_norm.normalize(skill.name).replace(" ", "")
+            if len(norm_name) >= 4 and len(norm_skill) >= 4:
+                if norm_name in norm_skill or norm_skill in norm_name:
+                    return skill
+        return None
 
     def mentioned_in(self, text: str) -> list[Skill]:
-        found = []
-        for s in self.catalog:
-            if any(_term_pattern(t).search(text) for t in (s.name, *s.aliases)):
-                found.append(s)
+        found = [s for s in self.catalog if self.is_mentioned(s, text)]
+        for hint in text_norm.hinted_skill_names(text):
+            skill = self.resolve(hint)
+            if skill is not None and skill not in found:
+                found.append(skill)
         return found
 
     def is_mentioned(self, skill: Skill, text: str) -> bool:
-        return any(_term_pattern(t).search(text) for t in (skill.name, *skill.aliases))
+        return any(text_norm.text_mentions(t, text) for t in (skill.name, *skill.aliases))
 
 
 class TaskAnalyzer:
@@ -139,6 +164,16 @@ class TaskAnalyzer:
                 if skills:
                     warnings.append("REQUIREMENTS_INFERRED_FROM_TEXT")
                     confidence_parts.append(TEXT_MATCH_CONFIDENCE)
+            if not skills:
+                skills = self._skills_from_semantic_search(catalog, clean_text, task.complexity, warnings)
+                if skills:
+                    warnings.append("REQUIREMENTS_INFERRED_FROM_SEMANTIC_SEARCH")
+                    confidence_parts.append(0.65)
+            if not skills:
+                skills = self._skills_from_domain_context(index, clean_text, task.complexity)
+                if skills:
+                    warnings.append("REQUIREMENTS_INFERRED_FROM_DOMAIN")
+                    confidence_parts.append(0.5)
         if not skills:
             missing.append("required_skills")
 
@@ -271,6 +306,31 @@ class TaskAnalyzer:
                     source=RequirementSource.LLM_SUGGESTED,
                 ),
             )
+
+        # Architectural Guardrail: Intelligent Skill Tiering
+        # Prevents "all-mandatory bottleneck" where 3+ technologies are marked mandatory,
+        # which mathematically disqualifies 100% of employees when dealing with full-stack tasks.
+        mandatory_items = [r for r in result.values() if r.mandatory]
+        if len(mandatory_items) > 2:
+            core_categories = {"language", "backend_framework", "frontend_framework", "mobile"}
+
+            def sort_key(req: RequiredSkill) -> tuple[int, int]:
+                s_obj = index.resolve(req.skill_name)
+                cat = getattr(s_obj, "category", "") if s_obj else ""
+                is_core = 0 if cat in core_categories else 1
+                return (is_core, -req.minimum_level)
+
+            sorted_mandatory = sorted(mandatory_items, key=sort_key)
+            # Retain the top 2 as mandatory; adapt remaining into high-weight preferred skills
+            for extra in sorted_mandatory[2:]:
+                result[extra.skill_name] = extra.model_copy(
+                    update={
+                        "mandatory": False,
+                        "weight": self.config.skills.mandatory_default_weight,
+                    }
+                )
+                warnings.append(f"ADAPTIVE_SKILL_TIERING:{extra.skill_name}_ADAPTED_TO_PREFERRED")
+
         return list(result.values())
 
     def _skills_from_text(
@@ -287,4 +347,57 @@ class TaskAnalyzer:
                 source=RequirementSource.TEXT_MATCH,
             )
             for s in index.mentioned_in(text)
+        ]
+
+    def _skills_from_semantic_search(
+        self, catalog: list[Skill], text: str, complexity: TaskComplexity | None, warnings: list[str]
+    ) -> list[RequiredSkill]:
+        try:
+            from app.intelligence.task_analysis.semantic import SemanticSkillMatcher
+
+            matcher = SemanticSkillMatcher.get_instance()
+            matches = matcher.search_skills(text, catalog, top_k=4)
+            if not matches:
+                return []
+
+            level = self.config.default_min_level_by_complexity[complexity or TaskComplexity.MEDIUM]
+            return [
+                RequiredSkill(
+                    skill_id=s.id,
+                    skill_name=s.name,
+                    minimum_level=level,
+                    mandatory=False,
+                    weight=round(min(1.0, max(0.4, score)), 2),
+                    source=RequirementSource.TEXT_MATCH,
+                )
+                for s, score in matches
+            ]
+        except Exception as exc:
+            logger.warning("Semantic vector search error: %s", exc)
+            return []
+
+    def _skills_from_domain_context(
+        self, index: SkillCatalogIndex, text: str, complexity: TaskComplexity | None
+    ) -> list[RequiredSkill]:
+        domain_skills = text_norm.infer_domain_skills(text)
+        if not domain_skills:
+            return []
+        resolved: list[Skill] = []
+        for name in domain_skills:
+            s = index.resolve(name)
+            if s is not None and s not in resolved:
+                resolved.append(s)
+        if not resolved:
+            return []
+        level = self.config.default_min_level_by_complexity[complexity or TaskComplexity.MEDIUM]
+        return [
+            RequiredSkill(
+                skill_id=s.id,
+                skill_name=s.name,
+                minimum_level=level,
+                mandatory=False,
+                weight=self._default_weight(False),
+                source=RequirementSource.TEXT_MATCH,
+            )
+            for s in resolved
         ]

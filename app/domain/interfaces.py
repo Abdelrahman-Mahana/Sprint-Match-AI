@@ -220,6 +220,17 @@ class EmployeeRepository(Protocol):
         limit: int = 25,
     ) -> Page[Employee]: ...
     def get_profiles(self, company_id: UUID, employee_ids: list[UUID]) -> dict[UUID, EmployeeProfile]: ...
+    def update_employee(
+        self,
+        company_id: UUID,
+        employee_id: UUID,
+        *,
+        full_name: str | None = None,
+        job_title: str | None = None,
+        experience_years: float | None = None,
+        employment_status: EmploymentStatus | None = None,
+        email: str | None = None,
+    ) -> Employee: ...
 
 
 class TaskRepository(Protocol):

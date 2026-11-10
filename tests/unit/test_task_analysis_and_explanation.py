@@ -188,3 +188,33 @@ def test_llm_explanation_fallback_on_ungrounded_output() -> None:
     good = f"- {result.primary.full_name} meets every mandatory skill requirement."
     text, source, _ = generate_explanation(req, result, MockLLMProvider([good]), use_llm=True)
     assert source == "llm" and text == good
+
+
+def test_arabic_explanation_and_evidence_translation() -> None:
+    from app.intelligence.recommendation.explanation import is_arabic, translate_evidence_ar
+
+    req, result = _result()
+    # Test English default
+    text_en = deterministic_explanation(req, result)
+    assert "Employee EMP-1" in text_en and "recommendation only" in text_en
+
+    # Test Arabic when task title is Arabic
+    req_ar = req.model_copy(update={"title": "تطوير لوحة التحكم في صفحة الويب"})
+    assert is_arabic(req_ar.title)
+    text_ar = deterministic_explanation(req_ar, result)
+    assert "تم ترشيح المطور Employee EMP-1" in text_ar
+    assert "بنسبة ملاءمة وتوافق" in text_ar
+    assert "المهارات والتقنيات المطلوبة" in text_ar
+    assert "هذا التقرير استرشادي لدعم القرار" in text_ar
+
+    # Test individual evidence translations
+    ev_rel = translate_evidence_ar("On time in 100% of 1 attributable deliveries")
+    assert "الالتزام التام بمواعيد التسليم بنسبة 100%" in ev_rel
+    assert "منسوبة للمطور" in ev_rel
+
+    ev_exp = translate_evidence_ar("2 completed similar task(s) out of 5 reviewed")
+    assert "أنجز 2 مهمة/مهام مماثلة" in ev_exp
+
+    ev_cap = translate_evidence_ar("35.0h free of 35.0h working time in window for a 16h task")
+    assert "سعة عمل متاحة تبلغ 35.0 ساعة" in ev_cap
+

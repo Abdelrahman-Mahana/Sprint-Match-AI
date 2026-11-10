@@ -33,9 +33,14 @@ class AppContainer:
         uow_factory: UnitOfWorkFactory,
         llm: LLMProvider | None,
         config: ScoringConfig | None = None,
+        *,
+        internal_uow_factory: UnitOfWorkFactory | None = None,
     ) -> None:
         self.settings = settings
+        # Business-data source (may be an adapted external system).
         self.uow_factory = uow_factory
+        # The application's own store (runs, audit, checkpoints). Same as the source when native.
+        self.internal_uow_factory = internal_uow_factory or uow_factory
         self.llm = llm
         self.config = config or ScoringConfig()
         self.engine = RecommendationEngine(self.config)

@@ -124,7 +124,9 @@ class CandidateOut(ApiModel):
     warnings: list[str]
 
     @classmethod
-    def from_evaluation(cls, e: CandidateEvaluation) -> CandidateOut:
+    def from_evaluation(cls, e: CandidateEvaluation, *, is_arabic_task: bool = False) -> CandidateOut:
+        from app.intelligence.recommendation.explanation import translate_evidence_ar
+
         return cls(
             employee_id=e.employee_id,
             employee_code=e.employee_code,
@@ -148,7 +150,9 @@ class CandidateOut(ApiModel):
                     weighted_score=round(c.weighted_score, 2),
                     has_evidence=c.has_evidence,
                     applicable=c.applicable,
-                    evidence=list(c.evidence),
+                    evidence=[translate_evidence_ar(ev) for ev in c.evidence]
+                    if is_arabic_task
+                    else list(c.evidence),
                 )
                 for c in e.criteria
             ],

@@ -1,0 +1,149 @@
+    :root {
+      --odoo-primary: #714B67;
+      --odoo-primary-dark: #55384D;
+      --odoo-teal: #00A09D;
+    }
+
+    body {
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Odoo Sheet & Elevation */
+    .o-sheet {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+    }
+
+    .dark .o-sheet {
+      background: #14171F;
+      border-color: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.35);
+    }
+
+    /* Odoo Statusbar Chevron Pipeline */
+    .o-statusbar {
+      display: flex;
+      align-items: center;
+      background: #F8F9FA;
+      border: 1px solid #E2E8F0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .dark .o-statusbar {
+      background: #181C24;
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .o-stage-step {
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 7px 16px 7px 22px;
+      font-size: 11px;
+      font-weight: 500;
+      color: #64748B;
+      background: transparent;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .o-stage-step:first-child {
+      padding-left: 14px;
+    }
+
+    .o-stage-step::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: -10px;
+      width: 0;
+      height: 0;
+      border-top: 17px solid transparent;
+      border-bottom: 17px solid transparent;
+      border-left: 10px solid #E2E8F0;
+      z-index: 2;
+    }
+
+    .dark .o-stage-step::after {
+      border-left-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .o-stage-step.active {
+      color: #FFFFFF;
+      background: #714B67;
+      font-weight: 600;
+    }
+
+    .o-stage-step.active::after {
+      border-left-color: #714B67;
+    }
+
+    .o-stage-step.completed {
+      color: #00A09D;
+      font-weight: 500;
+      background: rgba(0, 160, 157, 0.08);
+    }
+
+    .o-stage-step.completed::after {
+      border-left-color: rgba(0, 160, 157, 0.15);
+    }
+
+    /* Odoo Smart Button Box */
+    .oe-stat-button {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      padding: 7px 14px;
+      min-width: 130px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-radius: 8px;
+      transition: all 0.15s ease;
+      text-align: left;
+    }
+
+    .oe-stat-button:hover {
+      background: #F8F9FA;
+      border-color: #CBD5E1;
+      transform: translateY(-1px);
+    }
+
+    .dark .oe-stat-button {
+      background: #1A1E27;
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .dark .oe-stat-button:hover {
+      background: #222733;
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #CBD5E1;
+      border-radius: 9999px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94A3B8;
+    }
+
+    .dark ::-webkit-scrollbar-thumb {
+      background: #334155;
+    }
+
+    .dark ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }

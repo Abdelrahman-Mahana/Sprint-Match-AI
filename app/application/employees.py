@@ -67,6 +67,30 @@ class EmployeeService:
             raise NotFoundError("Employee not found")
         return employee
 
+    def update_employee(
+        self,
+        company: Company,
+        employee_id: UUID,
+        *,
+        full_name: str | None = None,
+        job_title: str | None = None,
+        experience_years: float | None = None,
+        employment_status: EmploymentStatus | None = None,
+        email: str | None = None,
+    ) -> Employee:
+        self.get(company, employee_id)
+        emp = self.uow.employees.update_employee(
+            company.id,
+            employee_id,
+            full_name=full_name,
+            job_title=job_title,
+            experience_years=experience_years,
+            employment_status=employment_status,
+            email=email,
+        )
+        self.uow.commit()
+        return emp
+
     def performance(self, company: Company, employee_id: UUID) -> EmployeePerformance:
         self.get(company, employee_id)
         outcomes = self.uow.performance.get_outcomes(company.id, [employee_id]).get(employee_id, [])

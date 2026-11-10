@@ -5,6 +5,7 @@ from uuid import UUID
 
 from sqlalchemy import Select, exists, func, select
 
+from app.core.exceptions import NotFoundError
 from app.domain.entities.employee import (
     Credential,
     Employee,
@@ -115,6 +116,39 @@ class SqlEmployeeRepository(SqlRepository):
     def get_employee(self, company_id: UUID, employee_id: UUID) -> Employee | None:
         row = self._execute(self._base(company_id).where(EmployeeModel.id == employee_id)).one_or_none()
         return self._to_domain(*row) if row else None
+
+    def update_employee(
+        self,
+        company_id: UUID,
+        employee_id: UUID,
+        *,
+        full_name: str | None = None,
+        job_title: str | None = None,
+        experience_years: float | None = None,
+        employment_status: EmploymentStatus | None = None,
+        email: str | None = None,
+    ) -> Employee:
+        m = self._execute(
+            select(EmployeeModel)
+            .where(EmployeeModel.company_id == company_id)
+            .where(EmployeeModel.id == employee_id)
+        ).scalar_one_or_none()
+        if m is None:
+            raise NotFoundError("Employee not found")
+        if full_name is not None:
+            m.full_name = full_name.strip()
+        if job_title is not None:
+            m.job_title = job_title.strip()
+        if experience_years is not None:
+            m.experience_years = experience_years
+        if employment_status is not None:
+            m.employment_status = employment_status
+        if email is not None:
+            m.email = email.strip()
+        self._s.flush()
+        emp = self.get_employee(company_id, employee_id)
+        assert emp is not None
+        return emp
 
     def get_employee_by_code(self, company_id: UUID, employee_code: str) -> Employee | None:
         row = self._execute(

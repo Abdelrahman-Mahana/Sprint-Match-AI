@@ -270,12 +270,39 @@ def _with_current_trace(response: RecommendationResponse, state: Mapping[str, An
 
 
 # --- shared builders ---------------------------------------------------------------------------------------
-def _non_candidate_explanation(state: Mapping[str, Any], status: RecommendationStatus) -> str:
+def _non_candidate_explanation(
+    state: Mapping[str, Any], status: RecommendationStatus, is_ar: bool = False
+) -> str:
     analysis = state.get("task_analysis") or {}
+    missing = analysis.get("missing_information", [])
+    if is_ar:
+        if status == RecommendationStatus.NEEDS_INPUT:
+            missing_ar = [
+                "المهارات المطلوبة (required_skills)"
+                if m == "required_skills"
+                else "ساعات العمل المقدرة (estimated_hours)"
+                if m == "estimated_hours"
+                else m
+                for m in missing
+            ]
+            return (
+                "المعلومات الأساسية للمهمة غير مكتملة: "
+                + "، ".join(missing_ar)
+                + ". يُرجى توفيرها (المتطلبات المحددة لها الأولوية) وإعادة طلب الترشيح."
+            )
+        if status == RecommendationStatus.PROVIDER_UNAVAILABLE:
+            return (
+                "المهمة لا تحتوي على مهارات محددة ومزود الذكاء الاصطناعي غير متاح حالياً لاستخراجها تلقائياً. "
+                "يُرجى تحديد المهارات المطلوبة صراحةً أو إعادة المحاولة لاحقاً."
+            )
+        if status == RecommendationStatus.NO_SUITABLE_CANDIDATE:
+            return "لا توجد سجلات موظفين متاحة لهذه الشركة."
+        return "تعذر إكمال طلب الترشيح؛ راجع الأخطاء المسجلة."
+
     if status == RecommendationStatus.NEEDS_INPUT:
         return (
             "Critical task information is missing: "
-            + ", ".join(analysis.get("missing_information", []))
+            + ", ".join(missing)
             + ". Provide it (structured requirements take priority) and request the recommendation again."
         )
     if status == RecommendationStatus.PROVIDER_UNAVAILABLE:
@@ -344,16 +371,20 @@ def build_response(
     explanation_state = state.get("final_explanation") or {}
     explanation = explanation_state.get("text")
     source = explanation_state.get("source")
+    record = state.get("task_record") or None
+    task_input = state.get("task_input") or {}
+    task_title = record["title"] if record else task_input.get("title")
+    from app.intelligence.recommendation.explanation import is_arabic
+    is_ar = is_arabic(task_title)
+
     if status != RecommendationStatus.FAILED and result is None and explanation is None:
-        explanation, source = _non_candidate_explanation(state, status), "deterministic"
+        explanation, source = _non_candidate_explanation(state, status, is_ar=is_ar), "deterministic"
     ranked = list(result.ranked) if result else []
     primary = ranked[0] if ranked else None
     include = req.include_alternatives if req else True
     max_alt = req.max_alternatives if req else 3
-    record = state.get("task_record") or None
     analysis = state.get("task_analysis")
     window = state.get("execution_window")
-    task_input = state.get("task_input") or {}
     trace = state.get("trace", [])
     errors = [*state.get("errors", []), *(extra_errors or [])]
     research_used = ctx.agent_mode != AgentMode.DISABLED
@@ -363,11 +394,11 @@ def build_response(
         status=status,
         task_id=UUID(record["id"]) if record else None,
         task_code=record["task_code"] if record else None,
-        task_title=(record["title"] if record else task_input.get("title")),
+        task_title=task_title,
         execution_window=ExecutionWindowOut.model_validate(window) if window else None,
-        primary_candidate=CandidateOut.from_evaluation(primary) if primary else None,
-        alternatives=[CandidateOut.from_evaluation(c) for c in ranked[1 : 1 + max_alt]] if include else [],
-        excluded_candidates=[CandidateOut.from_evaluation(c) for c in result.excluded] if result else [],
+        primary_candidate=CandidateOut.from_evaluation(primary, is_arabic_task=is_ar) if primary else None,
+        alternatives=[CandidateOut.from_evaluation(c, is_arabic_task=is_ar) for c in ranked[1 : 1 + max_alt]] if include else [],
+        excluded_candidates=[CandidateOut.from_evaluation(c, is_arabic_task=is_ar) for c in result.excluded] if result else [],
         explanation=explanation if status != RecommendationStatus.FAILED else None,
         explanation_source=source if status != RecommendationStatus.FAILED else None,
         warnings=list(dict.fromkeys(state.get("agent_warnings", []))),

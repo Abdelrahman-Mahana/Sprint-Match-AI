@@ -5,12 +5,22 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query
 
-from app.api.deps import AsOfDep, ServicesDep, Viewer, WindowDep
+from pydantic import BaseModel, Field
+
+from app.api.deps import AsOfDep, Manager, ServicesDep, Viewer, WindowDep
 from app.domain.entities.employee import Employee
 from app.domain.enums import EmploymentStatus
 from app.schemas.common import AvailabilityOut, Employee360Out, EmployeePage, PerformanceOut
 
 router = APIRouter(prefix="/employees", tags=["employees"])
+
+
+class EmployeeUpdate(BaseModel):
+    full_name: str | None = Field(default=None, max_length=200)
+    job_title: str | None = Field(default=None, max_length=120)
+    experience_years: float | None = Field(default=None, ge=0, le=50)
+    employment_status: EmploymentStatus | None = None
+    email: str | None = Field(default=None, max_length=254)
 
 
 @router.get("", response_model=EmployeePage)
@@ -61,3 +71,21 @@ def get_employee_availability(
 def get_employee_performance(employee_id: UUID, ctx: Viewer, svc: ServicesDep) -> PerformanceOut:
     perf = svc.employees.performance(ctx.company, employee_id)
     return PerformanceOut(summary=perf.summary, outcome_count=len(perf.outcomes))
+
+
+@router.patch("/{employee_id}", response_model=Employee)
+def update_employee(
+    employee_id: UUID,
+    body: EmployeeUpdate,
+    ctx: Manager,
+    svc: ServicesDep,
+) -> Employee:
+    return svc.employees.update_employee(
+        ctx.company,
+        employee_id,
+        full_name=body.full_name,
+        job_title=body.job_title,
+        experience_years=body.experience_years,
+        employment_status=body.employment_status,
+        email=body.email,
+    )
