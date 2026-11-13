@@ -176,13 +176,22 @@ def create_app(settings: Settings | None = None, container: AppContainer | None 
     @app.get("/ui", response_class=HTMLResponse, include_in_schema=False)
     @app.get("/", response_class=HTMLResponse, include_in_schema=False)
     def test_ui() -> HTMLResponse:
-        ui_index = ui_dir / "index.html"
-        if ui_index.exists():
-            return HTMLResponse(content=ui_index.read_text(encoding="utf-8"))
         static_index = static_dir / "index.html"
+        ui_index = ui_dir / "index.html"
         if static_index.exists():
-            return HTMLResponse(content=static_index.read_text(encoding="utf-8"))
-        return HTMLResponse("<h1>SprintMatch AI</h1><p>UI not found</p>", status_code=404)
+            content = static_index.read_text(encoding="utf-8")
+        elif ui_index.exists():
+            content = ui_index.read_text(encoding="utf-8")
+        else:
+            return HTMLResponse("<h1>SprintMatch AI</h1><p>UI not found</p>", status_code=404)
+        return HTMLResponse(
+            content=content,
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0",
+            },
+        )
 
     app.include_router(health.router)
     app.include_router(health.v1_router, prefix="/api/v1")
