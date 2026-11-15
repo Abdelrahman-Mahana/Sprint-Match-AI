@@ -925,6 +925,13 @@
             <i class="fa-solid fa-rotate text-xs text-odoo-primary" id="wfRefreshIcon"></i>
             <span>Refresh</span>
           </button>
+
+          <button onclick="openAddEmployeeModal()"
+            class="px-3.5 py-2 bg-odoo-primary hover:bg-odoo-primary-dark text-white rounded-xl text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-2xs shadow-odoo-primary/20"
+            title="Add New Employee">
+            <i class="fa-solid fa-user-plus text-xs"></i>
+            <span>Add Employee</span>
+          </button>
         </div>
       </div>
 
@@ -1511,6 +1518,239 @@
             class="px-5 py-2 bg-odoo-primary hover:bg-odoo-primary-dark text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center gap-1.5">
             <i class="fa-solid fa-floppy-disk text-xs"></i>
             <span>Save Changes to Database</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ================= 7. ADD EMPLOYEE MODAL (DATABASE INSERT) ================= -->
+    <div id="addEmployeeModal"
+      class="fixed inset-0 bg-black/70 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+      <div
+        class="o-sheet rounded-2xl max-w-2xl w-full p-6 sm:p-8 space-y-5 shadow-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-surface-100 max-h-[92vh] overflow-y-auto">
+
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
+          <div class="flex items-center gap-2.5">
+            <div
+              class="w-8 h-8 rounded-lg bg-odoo-primary text-white flex items-center justify-center text-sm shadow-xs">
+              <i class="fa-solid fa-user-plus"></i>
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-slate-900 dark:text-white">Add New Employee</h3>
+              <p class="text-xs text-slate-500">Create a complete employee record with schedule, attendance, skills, and past performance.</p>
+            </div>
+          </div>
+          <button onclick="closeAddEmployeeModal()"
+            class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer">
+            <i class="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+
+        <div class="space-y-4 text-xs">
+          <!-- Section 1: Basic Identity & Role -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="sm:col-span-2">
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Full Name <span class="text-rose-500">*</span>
+              </label>
+              <input type="text" id="addEmpFullName" placeholder="e.g. Omar Abdelrahman"
+                class="w-full bg-slate-50 dark:bg-surface-200 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-odoo-primary">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Employee Code
+              </label>
+              <input type="text" id="addEmpCode" placeholder="Auto (e.g. EMP-056)"
+                class="w-full bg-slate-50 dark:bg-surface-200 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-xs font-mono font-bold text-odoo-primary dark:text-pink-400 focus:outline-none focus:border-odoo-primary">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Job Title <span class="text-rose-500">*</span>
+              </label>
+              <input type="text" id="addEmpJobTitle" placeholder="e.g. Senior Backend Engineer"
+                class="w-full bg-slate-50 dark:bg-surface-200 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-odoo-primary">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Department
+              </label>
+              <select id="addEmpDepartment"
+                class="w-full bg-slate-50 dark:bg-surface-200 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-odoo-primary">
+                <option value="Backend Engineering">Backend Engineering</option>
+                <option value="Platform Infrastructure">Platform Infrastructure</option>
+                <option value="Frontend Engineering">Frontend Engineering</option>
+                <option value="Mobile Engineering">Mobile Engineering</option>
+                <option value="Quality Assurance">Quality Assurance</option>
+                <option value="Data & AI Engineering">Data & AI Engineering</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Team
+              </label>
+              <input type="text" id="addEmpTeam" value="Platform Core" placeholder="Team name"
+                class="w-full bg-slate-50 dark:bg-surface-200 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-odoo-primary">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Experience (Years)
+              </label>
+              <input type="number" id="addEmpExperience" step="0.5" min="0" max="40" value="4.0"
+                class="w-full bg-slate-50 dark:bg-surface-200 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-odoo-primary">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                Timezone
+              </label>
+              <input type="text" id="addEmpTimezone" value="Africa/Cairo"
+                class="w-full bg-slate-50 dark:bg-surface-200 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-odoo-primary">
+            </div>
+          </div>
+
+          <!-- Section 2: Work Schedule -->
+          <div class="pt-3 border-t border-slate-200 dark:border-white/10 space-y-3">
+            <h4 class="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <i class="fa-regular fa-clock text-odoo-primary"></i>
+              <span>Work Schedule & Shift Timings</span>
+            </h4>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                  Shift Start
+                </label>
+                <input type="time" id="addEmpShiftStart" value="09:00"
+                  class="w-full bg-slate-50 dark:bg-surface-200 border border-slate-200 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-odoo-primary">
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                  Shift End
+                </label>
+                <input type="time" id="addEmpShiftEnd" value="17:00"
+                  class="w-full bg-slate-50 dark:bg-surface-200 border border-slate-200 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-odoo-primary">
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                  Break (min)
+                </label>
+                <input type="number" id="addEmpBreakMinutes" min="0" max="240" step="15" value="60"
+                  class="w-full bg-slate-50 dark:bg-surface-200 border border-slate-200 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-odoo-primary">
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                  Days / Week
+                </label>
+                <input type="number" id="addEmpWorkdays" min="1" max="7" value="5"
+                  class="w-full bg-slate-50 dark:bg-surface-200 border border-slate-200 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-odoo-primary">
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Availability & Monthly Attendance -->
+          <div class="pt-3 border-t border-slate-200 dark:border-white/10 space-y-3">
+            <h4 class="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <i class="fa-solid fa-calendar-check text-emerald-500"></i>
+              <span>Monthly Attendance & Availability Status</span>
+            </h4>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                  Availability Status
+                </label>
+                <select id="addEmpAvailability"
+                  class="w-full bg-slate-50 dark:bg-surface-200 border border-slate-200 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-900 dark:text-white focus:outline-none focus:border-odoo-primary">
+                  <option value="AVAILABLE" selected>AVAILABLE (Ready for Tasks)</option>
+                  <option value="PARTIALLY_AVAILABLE">PARTIALLY (Limited Capacity)</option>
+                  <option value="BUSY">BUSY (Fully Committed)</option>
+                  <option value="ON_LEAVE">ON LEAVE (Vacation)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                  Days Present (Month)
+                </label>
+                <input type="number" id="addEmpDaysPresent" min="0" max="31" step="1" value="21"
+                  class="w-full bg-slate-50 dark:bg-surface-200 border border-slate-200 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-odoo-primary">
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                  Hours Worked (Month)
+                </label>
+                <input type="number" id="addEmpHoursWorked" min="0" max="300" step="1" value="154"
+                  class="w-full bg-slate-50 dark:bg-surface-200 border border-slate-200 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-odoo-primary">
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 4: Technical Skills & AI Readiness -->
+          <div class="pt-3 border-t border-slate-200 dark:border-white/10 space-y-3">
+            <h4 class="text-xs font-bold text-slate-900 dark:text-white flex items-center justify-between">
+              <span class="flex items-center gap-2">
+                <i class="fa-solid fa-code text-indigo-500"></i>
+                <span>Skills & AI Task Matching Competencies</span>
+              </span>
+              <span class="text-[11px] text-slate-400 font-normal">Click chips to toggle</span>
+            </h4>
+
+            <!-- Quick Chips -->
+            <div class="flex flex-wrap gap-1.5" id="addEmpSkillChips">
+              <button type="button" onclick="toggleAddSkillTag(this, 'Python')" class="skill-chip px-2.5 py-1 rounded-md bg-odoo-primary text-white font-medium text-[11px] transition cursor-pointer">Python</button>
+              <button type="button" onclick="toggleAddSkillTag(this, 'FastAPI')" class="skill-chip px-2.5 py-1 rounded-md bg-odoo-primary text-white font-medium text-[11px] transition cursor-pointer">FastAPI</button>
+              <button type="button" onclick="toggleAddSkillTag(this, 'PostgreSQL')" class="skill-chip px-2.5 py-1 rounded-md bg-odoo-primary text-white font-medium text-[11px] transition cursor-pointer">PostgreSQL</button>
+              <button type="button" onclick="toggleAddSkillTag(this, 'Docker')" class="skill-chip px-2.5 py-1 rounded-md bg-slate-100 dark:bg-surface-200 text-slate-600 dark:text-slate-300 font-medium text-[11px] transition cursor-pointer">Docker</button>
+              <button type="button" onclick="toggleAddSkillTag(this, 'Kubernetes')" class="skill-chip px-2.5 py-1 rounded-md bg-slate-100 dark:bg-surface-200 text-slate-600 dark:text-slate-300 font-medium text-[11px] transition cursor-pointer">Kubernetes</button>
+              <button type="button" onclick="toggleAddSkillTag(this, 'React')" class="skill-chip px-2.5 py-1 rounded-md bg-slate-100 dark:bg-surface-200 text-slate-600 dark:text-slate-300 font-medium text-[11px] transition cursor-pointer">React</button>
+              <button type="button" onclick="toggleAddSkillTag(this, 'TypeScript')" class="skill-chip px-2.5 py-1 rounded-md bg-slate-100 dark:bg-surface-200 text-slate-600 dark:text-slate-300 font-medium text-[11px] transition cursor-pointer">TypeScript</button>
+              <button type="button" onclick="toggleAddSkillTag(this, 'Flutter')" class="skill-chip px-2.5 py-1 rounded-md bg-slate-100 dark:bg-surface-200 text-slate-600 dark:text-slate-300 font-medium text-[11px] transition cursor-pointer">Flutter</button>
+              <button type="button" onclick="toggleAddSkillTag(this, 'Redis')" class="skill-chip px-2.5 py-1 rounded-md bg-slate-100 dark:bg-surface-200 text-slate-600 dark:text-slate-300 font-medium text-[11px] transition cursor-pointer">Redis</button>
+              <button type="button" onclick="toggleAddSkillTag(this, 'Odoo')" class="skill-chip px-2.5 py-1 rounded-md bg-slate-100 dark:bg-surface-200 text-slate-600 dark:text-slate-300 font-medium text-[11px] transition cursor-pointer">Odoo</button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div class="sm:col-span-2">
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                  Custom / Additional Skills (comma separated)
+                </label>
+                <input type="text" id="addEmpCustomSkills" placeholder="e.g. AWS, CI/CD, GraphQL"
+                  class="w-full bg-slate-50 dark:bg-surface-200 border border-slate-200 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-odoo-primary">
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                  Proficiency Level (%)
+                </label>
+                <input type="number" id="addEmpProficiency" min="10" max="100" step="5" value="88"
+                  class="w-full bg-slate-50 dark:bg-surface-200 border border-slate-200 dark:border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:border-odoo-primary">
+              </div>
+            </div>
+
+            <!-- Checkbox for sample completed tasks -->
+            <label class="flex items-start gap-2.5 p-2.5 rounded-xl bg-slate-50 dark:bg-surface-200/50 border border-slate-200 dark:border-white/5 cursor-pointer">
+              <input type="checkbox" id="addEmpCreateTasks" checked class="mt-0.5 rounded text-odoo-primary focus:ring-odoo-primary">
+              <div>
+                <span class="font-semibold text-slate-900 dark:text-white">Auto-generate verified past completed tasks</span>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400">Creates 3 completed tasks with high quality score (91.5%) in PostgreSQL so the AI Agent in Task Studio can evaluate readiness and recommend this developer.</p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Modal Actions -->
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-white/10">
+          <button type="button" onclick="closeAddEmployeeModal()"
+            class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-surface-200 dark:hover:bg-surface-300 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-medium transition cursor-pointer">
+            Cancel
+          </button>
+          <button type="button" onclick="submitAddEmployeeForm()" id="btnAddEmployeeSubmit"
+            class="px-5 py-2 bg-odoo-primary hover:bg-odoo-primary-dark text-white rounded-lg text-xs font-semibold shadow-xs transition flex items-center gap-1.5 cursor-pointer">
+            <i class="fa-solid fa-plus text-xs"></i>
+            <span>Add Employee & Sync Database</span>
           </button>
         </div>
 
@@ -3948,6 +4188,185 @@
         } finally {
           btn.disabled = false;
           btn.innerHTML = '<i class="fa-solid fa-floppy-disk text-xs"></i><span>Save Changes to Database</span>';
+        }
+      }
+
+      // ================= ADD EMPLOYEE MODAL & SUBMISSION =================
+      let selectedAddSkills = ['Python', 'FastAPI', 'PostgreSQL'];
+
+      function openAddEmployeeModal() {
+        // Auto calculate next EMP-xxx code
+        let maxCode = 55;
+        if (currentWorkforceAttendanceList && currentWorkforceAttendanceList.length) {
+          currentWorkforceAttendanceList.forEach(e => {
+            const m = (e.employee_code || '').match(/EMP-(\d+)/);
+            if (m) {
+              const val = parseInt(m[1], 10);
+              if (val > maxCode) maxCode = val;
+            }
+          });
+        }
+        const nextCode = `EMP-${String(maxCode + 1).padStart(3, '0')}`;
+        const codeInput = document.getElementById('addEmpCode');
+        if (codeInput) {
+          codeInput.value = nextCode;
+          codeInput.placeholder = nextCode;
+        }
+
+        // Reset inputs
+        const nameInput = document.getElementById('addEmpFullName');
+        if (nameInput) nameInput.value = '';
+        const titleInput = document.getElementById('addEmpJobTitle');
+        if (titleInput) titleInput.value = 'Senior Backend Engineer';
+        const expInput = document.getElementById('addEmpExperience');
+        if (expInput) expInput.value = '4.0';
+        const daysInput = document.getElementById('addEmpDaysPresent');
+        if (daysInput) daysInput.value = '21';
+        const hrsInput = document.getElementById('addEmpHoursWorked');
+        if (hrsInput) hrsInput.value = '154';
+        const customSkillsInput = document.getElementById('addEmpCustomSkills');
+        if (customSkillsInput) customSkillsInput.value = '';
+
+        const modal = document.getElementById('addEmployeeModal');
+        if (modal) modal.classList.remove('hidden');
+      }
+
+      function closeAddEmployeeModal() {
+        const modal = document.getElementById('addEmployeeModal');
+        if (modal) modal.classList.add('hidden');
+      }
+
+      function toggleAddSkillTag(btn, skillName) {
+        if (!selectedAddSkills) selectedAddSkills = [];
+        const idx = selectedAddSkills.indexOf(skillName);
+        if (idx !== -1) {
+          selectedAddSkills.splice(idx, 1);
+          btn.className = 'skill-chip px-2.5 py-1 rounded-md bg-slate-100 dark:bg-surface-200 text-slate-600 dark:text-slate-300 font-medium text-[11px] transition cursor-pointer';
+        } else {
+          selectedAddSkills.push(skillName);
+          btn.className = 'skill-chip px-2.5 py-1 rounded-md bg-odoo-primary text-white font-medium text-[11px] transition cursor-pointer';
+        }
+      }
+
+      async function submitAddEmployeeForm() {
+        const fullName = document.getElementById('addEmpFullName')?.value?.trim();
+        const code = document.getElementById('addEmpCode')?.value?.trim();
+        const jobTitle = document.getElementById('addEmpJobTitle')?.value?.trim();
+        const department = document.getElementById('addEmpDepartment')?.value?.trim() || 'Backend Engineering';
+        const team = document.getElementById('addEmpTeam')?.value?.trim() || 'Platform Core';
+        const expYears = parseFloat(document.getElementById('addEmpExperience')?.value) || 3.0;
+        const timezone = document.getElementById('addEmpTimezone')?.value?.trim() || 'Africa/Cairo';
+        const shiftStart = document.getElementById('addEmpShiftStart')?.value || '09:00';
+        const shiftEnd = document.getElementById('addEmpShiftEnd')?.value || '17:00';
+        const breakMins = parseInt(document.getElementById('addEmpBreakMinutes')?.value) || 60;
+        const workdays = parseInt(document.getElementById('addEmpWorkdays')?.value) || 5;
+        const availability = document.getElementById('addEmpAvailability')?.value || 'AVAILABLE';
+        const daysPresent = parseInt(document.getElementById('addEmpDaysPresent')?.value) || 21;
+        const hoursWorked = parseFloat(document.getElementById('addEmpHoursWorked')?.value) || 154.0;
+        const proficiency = parseInt(document.getElementById('addEmpProficiency')?.value) || 88;
+        const createTasks = document.getElementById('addEmpCreateTasks')?.checked !== false;
+
+        if (!fullName) {
+          showToast('Please enter employee full name', 'warn');
+          return;
+        }
+        if (!jobTitle) {
+          showToast('Please enter job title', 'warn');
+          return;
+        }
+
+        // Aggregate skills from chips + custom text
+        const skillsList = [...selectedAddSkills];
+        const customSkillsStr = document.getElementById('addEmpCustomSkills')?.value?.trim() || '';
+        if (customSkillsStr) {
+          customSkillsStr.split(',').forEach(s => {
+            const clean = s.trim();
+            if (clean && !skillsList.includes(clean)) skillsList.push(clean);
+          });
+        }
+        if (skillsList.length === 0) skillsList.push('Python', 'FastAPI');
+
+        const btn = document.getElementById('btnAddEmployeeSubmit');
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i><span>Adding to PostgreSQL...</span>';
+        }
+
+        const payload = {
+          full_name: fullName,
+          employee_code: code || null,
+          job_title: jobTitle,
+          department: department,
+          team: team,
+          experience_years: expYears,
+          timezone: timezone,
+          employment_status: 'ACTIVE',
+          availability_status: availability,
+          shift_start: shiftStart.length === 5 ? `${shiftStart}:00` : shiftStart,
+          shift_end: shiftEnd.length === 5 ? `${shiftEnd}:00` : shiftEnd,
+          break_minutes: breakMins,
+          working_days_per_week: workdays,
+          monthly_days_present: daysPresent,
+          monthly_hours_worked: hoursWorked,
+          skills: skillsList,
+          skill_proficiency: proficiency,
+          create_sample_tasks: createTasks
+        };
+
+        try {
+          const resp = await fetch(`${API_BASE}/api/v1/workforce/employees`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-API-Key': API_KEY
+            },
+            body: JSON.stringify(payload)
+          });
+
+          if (!resp.ok) {
+            const errData = await resp.json().catch(() => ({}));
+            throw new Error(errData.detail || `Server error (${resp.status})`);
+          }
+
+          const resData = await resp.json();
+          const newEmp = resData.employee;
+
+          if (newEmp) {
+            // Prepend new employee to active lists
+            currentWorkforceAttendanceList.unshift(newEmp);
+            if (currentEmployees) {
+              currentEmployees.unshift({
+                id: newEmp.employee_id,
+                employee_code: newEmp.employee_code,
+                full_name: newEmp.full_name,
+                job_title: newEmp.job_title,
+                department_name: newEmp.department_name,
+                team_name: newEmp.team_name,
+                experience_years: newEmp.experience_years,
+                employment_status: newEmp.employment_status,
+                timezone: newEmp.timezone
+              });
+            }
+
+            // Update Navbar badge
+            const topBadge = document.getElementById('topWorkforceCount');
+            if (topBadge) topBadge.innerText = `${currentWorkforceAttendanceList.length} Staff`;
+
+            // Refresh cards and table
+            filterWorkforceAttendance();
+            updateWorkforceKpiSummary(currentWorkforceAttendanceList);
+            renderEmployeesApp();
+
+            closeAddEmployeeModal();
+            showToast(`Employee ${newEmp.full_name} (${newEmp.employee_code}) created successfully!`, 'success');
+          }
+        } catch (err) {
+          showToast(`Failed to create employee: ${err.message}`, 'error');
+        } finally {
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-plus text-xs"></i><span>Add Employee & Sync Database</span>';
+          }
         }
       }
 
