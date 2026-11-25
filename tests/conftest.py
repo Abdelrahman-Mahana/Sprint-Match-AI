@@ -17,14 +17,13 @@ import pytest
 from dotenv import dotenv_values
 from sqlalchemy import Engine, create_engine, text
 
-from app.application.container import AppContainer
-from app.application.context import RequestContext
-from app.core.config import Settings
-from app.domain.enums import Role
-from app.infrastructure.database.session import create_session_factory
-from app.infrastructure.database.unit_of_work import SqlAlchemyUnitOfWorkFactory
-from app.infrastructure.demo.seeder import seed_demo_data
-from scripts.init_db import upgrade
+from app.application.services import AppContainer, RequestContext
+from app.core import Settings
+from app.domain import Role
+from app.infrastructure.orm import create_session_factory
+from app.infrastructure.repositories import SqlAlchemyUnitOfWorkFactory
+from scripts.cli import upgrade
+from scripts.demo_data import seed_demo_data
 
 ROOT = Path(__file__).resolve().parents[1]
 REFERENCE_DATE = date(2026, 11, 3)

@@ -1,155 +1,109 @@
 # SprintMatch AI
 
-AI-assisted, explainable **employee–task recommendation** for Scrum teams.
+Explainable employee–task recommendation platform for engineering and Scrum teams.
 
-Given a task, SprintMatch AI analyses its requirements, builds task-specific evidence for every employee
-(verified skills, relevant experience, reviewed task outcomes, schedules, leaves, attendance, current workload)
-and recommends **one primary employee** plus ranked alternatives — or explicitly reports that nobody is
-suitable. It **never assigns work automatically**; the project manager decides.
+Given a task and execution window, SprintMatch AI analyses technical requirements, gathers authoritative workforce records from PostgreSQL (verified skills, historical task outcomes, work schedules, approved leaves, attendance, and active commitments), filters out ineligible staff against hard business constraints, and ranks eligible candidates deterministically — or explicitly reports when no candidate fits. Recommendations are strictly advisory; the system never assigns work automatically without manager confirmation.
 
-Key properties:
+## Key Architecture Properties
 
-* **Deterministic core.** Capacity, eligibility, scoring and ranking are pure Python with versioned,
-  configurable policies. Same data + same task + same `as_of` ⇒ same result. No LLM is required.
-* **LLM-provider independent.** Optional LLM use (natural-language task analysis, explanation wording) goes
-  through a provider interface with OpenAI-compatible, Ollama and Mock adapters selected by configuration.
-* **Operational LangGraph agent.** A compiled `StateGraph` with 16 nodes, a `ToolNode` executing 20 read-only,
-  PostgreSQL-backed tools for an LLM *workforce research agent* (native tool calling or validated JSON tool plans),
-  conditional routing, bounded tool loops, retry policies, PostgreSQL checkpointing with resume, and full
-  execution audit. The research agent informs; the deterministic engine decides the ranking.
-* **Explainable.** Every candidate gets 7 score components with evidence; every excluded employee gets explicit
-  exclusion reasons; data coverage and confidence are reported; missing evidence is never treated as zero.
-* **Odoo-ready, Odoo-free.** Business logic depends only on repository protocols; PostgreSQL implements them
-  today, an Odoo 17 adapter can later (see [docs/ODOO_INTEGRATION.md](docs/ODOO_INTEGRATION.md)).
-
-| Document | Content |
-|---|---|
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layers, dependency rules, architecture decisions |
-| [docs/DATABASE.md](docs/DATABASE.md) | Schema, relationships, constraints, tenancy |
-| [docs/AGENT_WORKFLOW.md](docs/AGENT_WORKFLOW.md) | LangGraph workflow, state, tools, failure handling |
-| [AGENT_IMPLEMENTATION_REPORT.md](AGENT_IMPLEMENTATION_REPORT.md) | Graph, nodes, edges, tools, checkpointing, test evidence |
-| [docs/SCORING.md](docs/SCORING.md) | Workforce formulas, eligibility, scoring, missing-data policy |
-| [docs/API.md](docs/API.md) | REST API, authentication, examples |
-| [docs/TESTING.md](docs/TESTING.md) | Test strategy and scenario matrix |
-| [docs/DEVELOPMENT_ROADMAP.md](docs/DEVELOPMENT_ROADMAP.md) | Milestones |
-| [PROJECT_STATUS.md](PROJECT_STATUS.md) | Current state, test results, known issues |
+- **Deterministic Core:** Availability, workload capacity, eligibility gates, and 7-criterion weighted scoring live in pure Python (`app/intelligence/`) under versioned policies (`app/domain/policies.py`). Same inputs always yield identical rankings.
+- **Zero-Hallucination Dual-Plane Agent:** A compiled LangGraph `StateGraph` (`app/agents/graph.py`) runs an optional LLM workforce research loop over read-only database tools (`app/agents/tools/`), followed by direct PostgreSQL ingestion, deterministic evaluation, and independent final invariant checks before saving.
+- **Provider-Independent LLM Integration:** Supports OpenAI-compatible APIs, Ollama, Mock, or `none` (pure deterministic mode) via `app/infrastructure/llm/`.
+- **Adaptive Schema Discovery:** Connects natively to the bundled PostgreSQL schema or adapts dynamically to external SQL databases via `app/infrastructure/schema_discovery/` and `app/infrastructure/adaptive/`.
 
 ## Requirements
 
-* Python 3.12 and [uv](https://docs.astral.sh/uv/)
-* PostgreSQL 16+ (tested with 18) — via Docker Compose **or** a local installation
+- **Python 3.12+** (managed via `uv` or standard virtualenv)
+- **PostgreSQL 16+** (Docker Compose or local PostgreSQL instance)
 
-## Quick start with Docker Compose
+## Quick Start
+
+### 1. Environment & Database Setup
 
 ```bash
-cp .env.example .env            # set POSTGRES_PASSWORD and matching DATABASE_URL/TEST_DATABASE_URL
-docker compose up -d db
+cp .env.example .env            # Configure DATABASE_URL, TEST_DATABASE_URL, and API_KEYS
+docker compose up -d db         # Or start a local PostgreSQL 16+ cluster
 uv sync
-uv run python -m scripts.init_db                 # alembic upgrade head + LangGraph checkpoint tables
-uv run python -m scripts.seed_demo_data          # reproducible demo dataset
-uv run python -m scripts.validate_demo_data      # consistency checks
-docker compose up api                            # or: uv run uvicorn app.main:create_app --factory --reload
+uv run python -m scripts.cli init-db
+uv run python -m scripts.cli seed
+uv run python -m scripts.cli validate
 ```
 
-Open <http://localhost:8000/docs> (Swagger). Optional pgAdmin: `docker compose --profile tools up pgadmin`.
-
-## Local PostgreSQL without Docker
-
-Any PostgreSQL works; point `DATABASE_URL` / `TEST_DATABASE_URL` at it. A private cluster can be created with the
-PostgreSQL binaries (this is how the project was developed on Windows):
-
-```powershell
-$bin = "C:\Program Files\PostgreSQL\18\bin"
-& "$bin\initdb.exe" -D .local\pgdata -U sprintmatch --auth=scram-sha-256 --pwprompt -E UTF8
-& "$bin\pg_ctl.exe" -D .local\pgdata -o "-p 55432" -l .local\pg.log start
-& "$bin\psql.exe" -h localhost -p 55432 -U sprintmatch -d postgres -c "CREATE DATABASE sprintmatch;" -c "CREATE DATABASE sprintmatch_test;"
-```
-
-`.local/` is git-ignored.
-
-## Commands
-
-| Task | Command |
-|---|---|
-| Install dependencies | `uv sync` |
-| Run migrations | `uv run python -m scripts.init_db` (Alembic upgrade + checkpoint tables) |
-| New migration | `uv run alembic revision --autogenerate -m "..."` |
-| Seed demo data | `uv run python -m scripts.seed_demo_data [--reference-date 2026-11-03] [--seed N]` |
-| Reset demo data | `uv run python -m scripts.reset_demo_data` |
-| Validate data | `uv run python -m scripts.validate_demo_data` |
-| Run API (Linux/macOS/Docker) | `uv run uvicorn app.main:create_app --factory --reload` |
-| Run API (Windows) | `uv run uvicorn app.main:create_app --factory --loop app.core.event_loop:selector_loop_factory` (psycopg async needs a selector loop) |
-| Test the LLM provider | `uv run python -m scripts.test_llm_connection` (health, capability probe, structured output, one tool call) |
-| Run the agent once | `uv run python -m scripts.run_agent_demo TASK-SCN-01 --as-of 2026-11-03T10:00:00+02:00 [--stream]` |
-| Graph diagram | `uv run python -m scripts.export_graph` (writes `docs/agent_graph.mmd`) |
-| Prune checkpoints | `uv run python -m scripts.prune_checkpoints` |
-| Live LLM tests (opt-in) | `RUN_LIVE_LLM_TESTS=1 uv run pytest tests/live -m live` |
-| All tests | `uv run pytest` |
-| Unit tests only (no DB) | `uv run pytest tests/unit` |
-| Lint / format / types | `uv run ruff check .` · `uv run ruff format .` · `uv run mypy app` |
-| Hash an API key | `uv run python scripts/hash_api_key.py "<key>"` |
-
-Seeding refuses to run with `ENVIRONMENT=production` and refuses to overwrite data without `--reset`.
-
-## Configuration
-
-All configuration is environment-based (see [.env.example](.env.example)). Important variables:
-
-| Variable | Purpose |
-|---|---|
-| `DATABASE_URL`, `TEST_DATABASE_URL` | PostgreSQL connection (SQLAlchemy URL, `postgresql+psycopg://...`) |
-| `LLM_PROVIDER` | `none` (default) · `mock` · `openai_compatible` · `ollama` |
-| `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` | Provider endpoint, secret, model |
-| `LLM_TEMPERATURE`, `LLM_TIMEOUT_SECONDS`, `LLM_MAX_RETRIES` | Call behaviour |
-| `LLM_STRUCTURED_OUTPUT_MODE` | `json_schema` or `json_object` |
-| `EXPLANATION_MODE` | `deterministic` (default) or `llm` (grounding-checked, deterministic fallback) |
-| `AGENT_TOOL_MODE` | `auto` (default: native tool calling if supported, else JSON tool plan) · `native` · `json_plan` · `disabled` |
-| `AGENT_MAX_TOOL_ROUNDS`, `AGENT_MAX_TOOL_CALLS`, `AGENT_TOOL_TIMEOUT_SECONDS` | Tool-loop bounds (5, 20, 10 s) |
-| `AGENT_MAX_TOOL_RESULT_ITEMS/CHARS`, `AGENT_MAX_PROFILE_EXPANSIONS` | Result size and breadth bounds |
-| `CHECKPOINTER`, `CHECKPOINT_SCHEMA`, `CHECKPOINT_RETENTION_DAYS` | `postgres` (default) · `memory` · `none`; schema; retention |
-| `LLM_MAX_RETRY_WAIT_SECONDS` | Cap for provider `Retry-After` on HTTP 429 |
-| `API_KEYS` | JSON list of `{name, role, company_code, key_sha256}` — only digests are configured |
-| `ACCEPT_LLM_EFFORT_ESTIMATES` | `false` (default): LLM effort estimates are suggestions only |
-| `DEMO_REFERENCE_DATE`, `DEMO_SEED` | Demo data anchor date (default: today) and seed |
-
-Development keys in `.env.example`: `dev-manager-key` (manager) and `dev-viewer-key` (viewer). Replace them for
-any shared environment. Secrets are never stored in code or the database and are redacted from logs.
-
-## Example
+### 2. Run the API Server
 
 ```bash
-curl -X POST http://localhost:8000/api/v1/agent/recommend \
-  -H "X-API-Key: dev-manager-key" -H "Content-Type: application/json" \
-  -d '{"task_code": "TASK-SCN-01", "as_of": "2026-11-03T10:00:00+02:00"}'
+# Linux / macOS / Docker
+uv run uvicorn app.main:create_app --factory --reload
+
+# Windows (psycopg async checkpointer requires selector event loop)
+uv run uvicorn app.main:create_app --factory --loop app.core:selector_loop_factory
 ```
 
-With demo data seeded for reference date 2026-11-03 this recommends **Ahmed Hassan (EMP-001)** and lists, for
-example, Karim Mostafa as excluded for `INSUFFICIENT_AVAILABLE_CAPACITY` and Salma Farouk for
-`ON_LEAVE_DURING_WINDOW`. Demo scenarios are listed in [docs/TESTING.md](docs/TESTING.md).
+Open `http://localhost:8000/docs` for Swagger API documentation or `http://localhost:8000/` for the web UI.
 
-## Repository layout
+## Repository Layout
 
 ```text
 app/
-  core/            config, structured logging + redaction, security, exceptions
-  domain/          entities, enums, repository protocols (interfaces.py), versioned policies
-  intelligence/    deterministic engines: workforce (calendar, capacity, windows), skills, performance,
-                   recommendation (eligibility, criteria, engine, explanation), task analysis, prompts
-  application/     use-case services + composition root (container.py)
-  agents/          LangGraph: state, context, nodes/, tools/ (20 tools + ToolNode policy), routing, builder,
-                   checkpointer, runtime, prompts
-  infrastructure/  database (models, repositories, unit of work), llm adapters, demo data generator
-  api/             FastAPI routers (v1) and dependencies
-  schemas/         API contracts
-alembic/           migrations          scripts/  CLI commands          tests/  unit, integration, agent, api
+  main.py            FastAPI factory, lifespan, middleware, and router wiring
+  core.py            Settings (.env), logging with secret redaction, API key auth, exceptions, Windows event loop
+  domain.py          Domain enums, error categories, immutable entities, policies, and repository protocols
+  schemas.py         Pydantic v2 API request/response and agent tool schemas
+  api/               REST routers & dependencies (deps, agent, tasks, workforce, database)
+  application/       Services & DI container (services), agent read-only queries (queries), agent runner/SSE (runner)
+  agents/            LangGraph StateGraph (graph), state/checkpointer (state), nodes, and read-only tools/policy
+  intelligence/      Deterministic engines: analyzer, capacity, scoring
+  infrastructure/    SQLAlchemy models (orm), repositories, discovery, adaptive DB adapter, and LLM providers
+  static/            Self-contained web UI (index.html) served directly by FastAPI
+alembic/             PostgreSQL schema migrations
+scripts/             Unified CLI (cli.py) and deterministic demo dataset catalog/generator/seeder (demo_data.py)
+tests/               Flat unit, integration, API, agent, tool-policy, and opt-in live LLM tests
 ```
 
-## Troubleshooting
+## Useful Commands
 
-| Symptom | Cause / fix |
+| Task | Command |
 |---|---|
-| `psycopg cannot use the 'ProactorEventLoop'` | Windows: start uvicorn with `--loop app.core.event_loop:selector_loop_factory` |
-| Research shows `RESEARCH_AGENT_UNAVAILABLE:PROVIDER_UNAVAILABLE` | Provider down or rate limited (e.g. free tiers with a tokens-per-minute cap). The deterministic recommendation is still produced; lower `AGENT_MAX_TOOL_ROUNDS` / `AGENT_MAX_TOOL_RESULT_CHARS` or raise `LLM_MAX_RETRIES` |
-| `agent_mode: disabled` | No LLM, or the model supports neither tool calling nor structured output (`GET /api/v1/health/agent` shows the reason) |
-| Run FAILED with `resumable: true` | Retryable outage (database/checkpoints); fix it and call `POST /api/v1/agent/runs/{id}/retry` |
-| Integration tests skipped | `TEST_DATABASE_URL` unreachable |
+| Initialize / migrate DB | `uv run python -m scripts.cli init-db` |
+| Seed demo dataset | `uv run python -m scripts.cli seed [--reference-date YYYY-MM-DD] [--seed N]` |
+| Reset demo dataset | `uv run python -m scripts.cli reset [--reference-date YYYY-MM-DD] [--seed N]` |
+| Validate database consistency | `uv run python -m scripts.cli validate` |
+| Run CLI agent demo | `uv run python -m scripts.cli demo TASK-SCN-01 [--stream]` |
+| Export Mermaid graph diagram | `uv run python -m scripts.cli export-graph` |
+| Test LLM connectivity | `uv run python -m scripts.cli check-llm` |
+| Prune expired checkpoints | `uv run python -m scripts.cli prune-checkpoints` |
+| Hash an API key | `uv run python -m scripts.cli hash-key "<key>"` |
+| Run all offline tests | `uv run pytest` |
+| Run pure unit tests only | `uv run pytest -m "not integration"` |
+| Run opt-in live LLM tests | `RUN_LIVE_LLM_TESTS=1 uv run pytest tests/test_live.py -m live` |
+| Lint & static type check | `uv run ruff check app scripts tests && uv run mypy app` |
+
+## Key Environment Variables
+
+See `.env.example` for full defaults:
+
+| Variable | Description |
+|---|---|
+| `DATABASE_URL`, `TEST_DATABASE_URL` | PostgreSQL connection URLs (`postgresql+psycopg://...`) |
+| `DATABASE_ADAPTER` | `auto` (default) · `native` · `adaptive` |
+| `LLM_PROVIDER` | `none` (default) · `mock` · `openai_compatible` · `ollama` |
+| `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` | Provider endpoint, API secret, and model identifier |
+| `EXPLANATION_MODE` | `deterministic` (default) or `llm` (evidence-grounded with deterministic fallback) |
+| `AGENT_TOOL_MODE` | `auto` (default) · `native` · `json_plan` · `disabled` |
+| `AGENT_MAX_TOOL_ROUNDS`, `AGENT_MAX_TOOL_CALLS` | Bounded research loop limits (defaults: `5`, `20`) |
+| `CHECKPOINTER`, `CHECKPOINT_SCHEMA`, `CHECKPOINT_RETENTION_DAYS` | `postgres` (default) · `memory` · `none` |
+| `API_KEYS` | JSON array of `{name, role, company_code, key_sha256}` SHA-256 digests |
+
+## Example API Request
+
+```bash
+curl -X POST http://localhost:8000/api/v1/agent/recommend \
+  -H "X-API-Key: dev-manager-key" \
+  -H "Content-Type: application/json" \
+  -d '{"task_code": "TASK-SCN-01"}'
+```
+
+## Development Notes
+
+- **Windows Event Loop:** Start `uvicorn` with `--loop app.core:selector_loop_factory` so Psycopg's async checkpoint pool runs on `SelectorEventLoop`.
+- **LLM Fallback:** If an external LLM provider rate-limits or goes offline, `workforce_research_agent` degrades gracefully and the deterministic evaluation pipeline still produces an auditable recommendation.

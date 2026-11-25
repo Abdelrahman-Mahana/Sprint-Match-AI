@@ -15,9 +15,6 @@ __pycache__/
 .ruff_cache/
 .coverage
 htmlcov/
-# Node / Frontend
-node_modules/
-dist/
 
 # Editors / OS
 .vscode/

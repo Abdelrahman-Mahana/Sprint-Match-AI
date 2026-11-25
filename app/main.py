@@ -1,7 +1,7 @@
 """FastAPI application factory.
 
 Run with:  uvicorn app.main:create_app --factory
-(Windows + PostgreSQL checkpointer: add  --loop app.core.event_loop:selector_loop_factory)
+(Windows + PostgreSQL checkpointer: add  --loop app.core:selector_loop_factory)
 """
 
 from __future__ import annotations
@@ -11,28 +11,34 @@ import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Any
 
 from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-
 from sqlalchemy.engine import make_url
 
-from app.agents.checkpointer import CheckpointStore
-from app.agents.runtime import AgentRuntime
-from app.api import health
-from app.api.v1 import agent, database, employees, evaluation, recommendations, tasks, workforce
-from app.application.container import AppContainer
-from app.core.config import Settings, get_settings
-from app.core.exceptions import SprintMatchError
-from app.core.logging import configure_logging, register_secrets, request_id_var
-from app.core.security import ApiKeyAuthenticator, RateLimiter
-from app.infrastructure.database.session import create_db_engine, create_session_factory
-from app.infrastructure.database.unit_of_work import SqlAlchemyUnitOfWorkFactory
-from app.infrastructure.llm.factory import build_llm_provider
-from app.infrastructure.schema_discovery.resolver import resolve
+from app.agents.graph import AgentRuntime
+from app.agents.state import CheckpointStore
+from app.api import agent, database, deps, tasks, workforce
+from app.application.services import AppContainer
+from app.core import (
+    ApiKeyAuthenticator,
+    RateLimiter,
+    Settings,
+    SprintMatchError,
+    configure_logging,
+    get_settings,
+    register_secrets,
+    request_id_var,
+)
+from app.domain import UnitOfWorkFactory
+from app.infrastructure.adaptive import resolve
+from app.infrastructure.llm import build_llm_provider
+from app.infrastructure.orm import create_db_engine, create_session_factory
+from app.infrastructure.repositories import SqlAlchemyUnitOfWorkFactory
 
 logger = logging.getLogger(__name__)
 _REQUEST_ID_OK = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.")
@@ -67,12 +73,14 @@ def create_app(settings: Settings | None = None, container: AppContainer | None 
 
     if container is None:
         engine = create_db_engine(settings)
-        internal_factory = SqlAlchemyUnitOfWorkFactory(create_session_factory(engine))
+        llm = build_llm_provider(settings)
+        internal_factory: UnitOfWorkFactory = SqlAlchemyUnitOfWorkFactory(create_session_factory(engine))
         resolved = resolve(
             engine,
             settings,
             db_url_masked=mask_database_url(settings.database_url.get_secret_value()),
             internal_factory=internal_factory,
+            llm=llm,
         )
         uow_factory = resolved.factory
         if resolved.kind == "native":
@@ -81,8 +89,10 @@ def create_app(settings: Settings | None = None, container: AppContainer | None 
         container = AppContainer(
             settings,
             uow_factory,
-            build_llm_provider(settings),
+            llm,
             internal_uow_factory=internal_factory,
+            adapter_kind=resolved.kind,
+            schema_mapping=resolved.mapping,
         )
 
     if container.agent_runtime is None:
@@ -165,23 +175,18 @@ def create_app(settings: Settings | None = None, container: AppContainer | None 
         allow_headers=["*"],
     )
 
-    ui_dir = Path(__file__).resolve().parent / "ui"
     static_dir = Path(__file__).resolve().parent / "static"
 
-    if ui_dir.exists():
-        app.mount("/ui", StaticFiles(directory=str(ui_dir), html=True), name="ui")
     if static_dir.exists():
         app.mount("/static", StaticFiles(directory=str(static_dir), html=True), name="static")
+        app.mount("/ui", StaticFiles(directory=str(static_dir), html=True), name="ui")
 
     @app.get("/ui", response_class=HTMLResponse, include_in_schema=False)
     @app.get("/", response_class=HTMLResponse, include_in_schema=False)
     def test_ui() -> HTMLResponse:
         static_index = static_dir / "index.html"
-        ui_index = ui_dir / "index.html"
         if static_index.exists():
             content = static_index.read_text(encoding="utf-8")
-        elif ui_index.exists():
-            content = ui_index.read_text(encoding="utf-8")
         else:
             return HTMLResponse("<h1>SprintMatch AI</h1><p>UI not found</p>", status_code=404)
         return HTMLResponse(
@@ -193,16 +198,25 @@ def create_app(settings: Settings | None = None, container: AppContainer | None 
             },
         )
 
-    app.include_router(health.router)
-    app.include_router(health.v1_router, prefix="/api/v1")
+    app.include_router(deps.router)
+    app.include_router(deps.v1_router, prefix="/api/v1")
     for router in (
         agent.router,
-        database.router,
-        employees.router,
         tasks.router,
         workforce.router,
-        recommendations.router,
-        evaluation.router,
+        database.router,
     ):
         app.include_router(router, prefix="/api/v1")
     return app
+
+
+_default_app: FastAPI | None = None
+
+
+def __getattr__(name: str) -> Any:
+    global _default_app
+    if name == "app":
+        if _default_app is None:
+            _default_app = create_app()
+        return _default_app
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "AI-powered employee task allocation and recommendation agent for Scrum teams"
 readme = "README.md"
 requires-python = ">=3.12"
-# Exact pins: resolved together with uv (see uv.lock / requirements.txt).
+# Exact pins resolved together with uv (see uv.lock).
 dependencies = [
     "alembic==1.20.1",
     "fastapi==0.162.0",
@@ -47,15 +47,17 @@ extend-exclude = [".local"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "S", "DTZ"]
-ignore = ["S101", "RUF012", "B008", "E501"]  # line length is enforced by `ruff format`
+ignore = ["S101", "RUF001", "RUF002", "RUF003", "RUF012", "B008", "E501"]  # Arabic text support & line length
 
 [tool.ruff.lint.isort]
 known-third-party = ["alembic"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S", "DTZ"]
-"scripts/**" = ["S311"]
-"app/infrastructure/demo/**" = ["S311"]
+"scripts/**" = ["S", "DTZ", "S311"]
+"app/api/database.py" = ["S608", "SIM105", "S110", "B905"]
+"app/infrastructure/discovery.py" = ["S608", "DTZ", "B905"]
+"app/infrastructure/adaptive.py" = ["S608", "SIM105", "S110"]
 
 [tool.mypy]
 python_version = "3.12"
